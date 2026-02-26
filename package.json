@@ -1,0 +1,90 @@
+{
+  "name": "@lnbot/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript SDK for LnBot — Bitcoin for AI Agents. Send and receive sats over Lightning with a few lines of code. Zero dependencies.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "fetch-spec": "curl -s https://api.ln.bot/openapi/v1.json > openapi.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lnbotdev/typescript-sdk.git"
+  },
+  "homepage": "https://ln.bot",
+  "bugs": {
+    "url": "https://github.com/lnbotdev/typescript-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "devDependencies": {
+    "tsup": "^8",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "lnbot",
+    "ln-bot",
+    "lightning",
+    "lightning-network",
+    "lightning-payments",
+    "lightning-invoice",
+    "lightning-address",
+    "lightning-wallet",
+    "bitcoin",
+    "bitcoin-payments",
+    "btc",
+    "bolt11",
+    "bolt-11",
+    "lnurl",
+    "sats",
+    "satoshis",
+    "payments",
+    "invoices",
+    "wallet",
+    "wallet-api",
+    "send-bitcoin",
+    "receive-bitcoin",
+    "micropayments",
+    "ai-agent",
+    "ai-payments",
+    "mcp",
+    "model-context-protocol",
+    "api-client",
+    "sdk",
+    "typescript",
+    "node",
+    "webhooks",
+    "sse",
+    "server-sent-events"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,2178 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Materialization.Core.LnBot | v1",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://localhost:52749"
+    },
+    {
+      "url": "http://localhost:52750"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Materialization.Core.LnBot"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/backup/passkey/begin": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Start passkey backup",
+        "description": "Begins WebAuthn registration to back up wallet access with a passkey. Requires an existing wallet.",
+        "operationId": "BackupPasskeyBegin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupPasskeyBeginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/v1/backup/passkey/complete": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Complete passkey backup",
+        "description": "Completes backup by verifying the attestation from the authenticator and linking a passkey to the wallet.",
+        "operationId": "BackupPasskeyComplete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupPasskeyCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/v1/backup/recovery": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Generate recovery passphrase",
+        "description": "Generates a 12-word BIP-39 recovery passphrase and stores an irreversible hash. Returns the passphrase for the user to write down.",
+        "operationId": "BackupRecovery",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryBackupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore/passkey/begin": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Start passkey restore",
+        "description": "Begins WebAuthn authentication to restore wallet access using a passkey. Uses conditional UI (browser-mediated passkey selection).",
+        "operationId": "RestorePasskeyBegin",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestorePasskeyBeginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore/passkey/complete": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Complete passkey restore",
+        "description": "Completes restore by verifying the assertion. Revokes both API keys and returns fresh ones.",
+        "operationId": "RestorePasskeyComplete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestorePasskeyCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestorePasskeyCompleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/v1/restore/recovery": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Restore wallet with recovery passphrase",
+        "description": "Restores wallet access by verifying the 12-word recovery passphrase. Revokes both API keys and returns fresh ones.",
+        "operationId": "RestoreRecovery",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryRestoreResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/v1/wallets": {
+      "post": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Create a new wallet",
+        "description": "Creates a bare wallet with a random name and returns primary and secondary API keys. No authentication required.",
+        "operationId": "CreateWallet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWalletRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateWalletResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/wallets/current": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get current wallet",
+        "description": "Returns the wallet ID, name, and balance of the authenticated wallet.",
+        "operationId": "GetCurrentWallet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Update current wallet",
+        "description": "Updates the wallet name.",
+        "operationId": "UpdateCurrentWallet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWalletRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/keys": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "List all API keys",
+        "description": "Returns both API keys (primary and secondary) for the authenticated wallet. The key value itself is not returned — only metadata.",
+        "operationId": "ListApiKeys",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys/{slot}/rotate": {
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Rotate an API key",
+        "description": "Generates a new secret for the specified key slot (0 = primary, 1 = secondary). The old key is immediately invalidated. The new plaintext key is returned once and cannot be retrieved again.",
+        "operationId": "RotateApiKey",
+        "parameters": [
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateApiKeyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/v1/invoices": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Create a Lightning invoice to receive sats",
+        "description": "Creates a BOLT11 invoice for the authenticated wallet. The invoice is valid for 60 minutes. Optionally include a reference for your own tracking and a memo that gets embedded in the BOLT11 invoice.",
+        "operationId": "CreateInvoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "List invoices",
+        "description": "Returns invoices in reverse chronological order. Use 'after' to paginate by invoice number.",
+        "operationId": "ListInvoices",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/invoices/{number}": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Get a specific invoice by number",
+        "description": "Returns the invoice with the given number. Pending invoices past their expiry are reported as expired.",
+        "operationId": "GetInvoice",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/invoices/{number}/events": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "SSE stream that emits when an invoice settles or expires",
+        "description": "Opens a Server-Sent Events stream for a single invoice. Emits a 'settled' or 'expired' event when the invoice state changes, then closes. Use ?timeout= to control max wait (default 60s, max 300s). Sends keepalive comments every 30s.",
+        "operationId": "WaitForInvoice",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/payments": {
+      "post": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Send sats to a Lightning address or BOLT11 invoice",
+        "description": "Accepts a Lightning address (user@domain) or a BOLT11 invoice string in the 'target' field. For addresses, 'amount' is required. For BOLT11 invoices, 'amount' is optional (uses the invoice amount if omitted). The amount is placed on hold until settlement or failure. Provide an IdempotencyKey to safely retry without duplicate payments.",
+        "operationId": "CreatePayment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "List payments",
+        "description": "Returns payments in reverse chronological order. Use 'after' to paginate by payment number.",
+        "operationId": "ListPayments",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{number}": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Get a specific payment by number",
+        "description": "Returns the payment with the given number, including current status and settlement details.",
+        "operationId": "GetPayment",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/addresses": {
+      "post": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Create an address",
+        "description": "Creates a random address (if address is null) or claims a vanity address (if provided). Vanity addresses are charged based on length.",
+        "operationId": "CreateAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "List wallet addresses",
+        "description": "Returns all addresses belonging to the authenticated wallet.",
+        "operationId": "ListAddresses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AddressResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/addresses/{address}": {
+      "delete": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Delete an address",
+        "description": "Deletes an address. No refund is given for vanity addresses.",
+        "operationId": "DeleteAddress",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/addresses/{address}/transfer": {
+      "post": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Transfer address to another wallet",
+        "description": "Transfers an address to another wallet. Caller proves source ownership via bearer token, destination ownership by providing its API key.",
+        "operationId": "TransferAddress",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferAddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/transactions": {
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "List transactions",
+        "description": "Returns credit and debit transactions in reverse chronological order. Each transaction includes the balance after it was applied. Use 'after' to paginate by transaction number.",
+        "operationId": "ListTransactions",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Create a webhook endpoint",
+        "description": "Registers a URL to receive event callbacks. The signing secret is returned only once. Maximum 10 endpoints per wallet.",
+        "operationId": "CreateWebhook",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateWebhookResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List webhook endpoints",
+        "description": "Returns all webhook endpoints for the authenticated wallet. Secrets are not included.",
+        "operationId": "ListWebhooks",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WebhookResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/{id}": {
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete a webhook endpoint",
+        "description": "Deletes a webhook endpoint by ID. Pending deliveries for this endpoint will be discarded.",
+        "operationId": "DeleteWebhook",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddressResponse": {
+        "required": [
+          "address",
+          "generated",
+          "cost",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "generated": {
+            "type": "boolean"
+          },
+          "cost": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Algorithm": {
+        "type": "integer"
+      },
+      "ApiKeyResponse": {
+        "required": [
+          "id",
+          "name",
+          "hint",
+          "createdAt",
+          "lastUsedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "AssertionOptions": {
+        "type": "object",
+        "properties": {
+          "challenge": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "timeout": {
+            "type": "integer",
+            "format": "uint64"
+          },
+          "rpId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "allowCredentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicKeyCredentialDescriptor"
+            }
+          },
+          "userVerification": {
+            "$ref": "#/components/schemas/NullableOfUserVerificationRequirement"
+          },
+          "hints": {
+            "type": "array"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientInputs"
+          }
+        }
+      },
+      "AssertionResponse": {
+        "required": [
+          "authenticatorData",
+          "signature",
+          "clientDataJSON"
+        ],
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "authenticatorData": {
+            "type": "string",
+            "format": "byte"
+          },
+          "signature": {
+            "type": "string",
+            "format": "byte"
+          },
+          "clientDataJSON": {
+            "type": "string",
+            "format": "byte"
+          },
+          "userHandle": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "AttestationConveyancePreference": { },
+      "AttestationResponse": {
+        "required": [
+          "attestationObject",
+          "clientDataJSON",
+          "transports"
+        ],
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "attestationObject": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "clientDataJSON": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "transports": {
+            "type": [
+              "null",
+              "array"
+            ]
+          }
+        }
+      },
+      "AuthenticationExtensionsClientInputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "example.extension.bool": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "exts": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "uvm": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "credProps": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "prf": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsPRFInputs"
+          },
+          "largeBlob": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsLargeBlobInputs"
+          },
+          "credentialProtectionPolicy": {
+            "$ref": "#/components/schemas/NullableOfCredentialProtectionPolicy"
+          },
+          "enforceCredentialProtectionPolicy": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "AuthenticationExtensionsClientOutputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "example.extension.bool": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "appid": {
+            "type": "boolean"
+          },
+          "exts": { },
+          "uvm": { },
+          "credProps": { },
+          "prf": { },
+          "largeBlob": { },
+          "credProtect": {
+            "$ref": "#/components/schemas/NullableOfCredentialProtectionPolicy"
+          }
+        }
+      },
+      "AuthenticationExtensionsLargeBlobInputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "support": {
+            "$ref": "#/components/schemas/NullableOfLargeBlobSupport"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "write": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "AuthenticationExtensionsLargeBlobOutputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "supported": {
+            "type": "boolean"
+          },
+          "blob": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "written": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuthenticationExtensionsPRFInputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "eval": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsPRFValues"
+          },
+          "evalByCredential": {
+            "$ref": "#/components/schemas/NullableOfKeyValuePairOfstringAndAuthenticationExtensionsPRFValues"
+          }
+        }
+      },
+      "AuthenticationExtensionsPRFOutputs": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "results": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsPRFValues"
+          }
+        }
+      },
+      "AuthenticationExtensionsPRFValues": {
+        "required": [
+          "first"
+        ],
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "first": {
+            "type": "string",
+            "format": "byte"
+          },
+          "second": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          }
+        }
+      },
+      "AuthenticatorAssertionRawResponse": {
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "clientExtensionResults"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "response": {
+            "$ref": "#/components/schemas/AssertionResponse"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PublicKeyCredentialType"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
+          },
+          "clientExtensionResults": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
+          }
+        }
+      },
+      "AuthenticatorAttestationRawResponse": {
+        "required": [
+          "id",
+          "rawId",
+          "type",
+          "response",
+          "clientExtensionResults"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "rawId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PublicKeyCredentialType"
+          },
+          "response": {
+            "$ref": "#/components/schemas/AttestationResponse"
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
+          },
+          "clientExtensionResults": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
+          }
+        }
+      },
+      "AuthenticatorSelection": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "authenticatorAttachment": {
+            "$ref": "#/components/schemas/NullableOfAuthenticatorAttachment"
+          },
+          "residentKey": {
+            "$ref": "#/components/schemas/ResidentKeyRequirement"
+          },
+          "requireResidentKey": {
+            "type": "boolean"
+          },
+          "userVerification": {
+            "$ref": "#/components/schemas/UserVerificationRequirement"
+          }
+        }
+      },
+      "BackupPasskeyBeginResponse": {
+        "required": [
+          "sessionId",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/CredentialCreateOptions"
+          }
+        }
+      },
+      "BackupPasskeyCompleteRequest": {
+        "required": [
+          "sessionId",
+          "attestation"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "attestation": {
+            "$ref": "#/components/schemas/AuthenticatorAttestationRawResponse"
+          }
+        }
+      },
+      "CreateAddressRequest": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "address": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateInvoiceRequest": {
+        "required": [
+          "amount",
+          "reference",
+          "memo"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "memo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreatePaymentRequest": {
+        "required": [
+          "amount",
+          "target",
+          "idempotencyKey",
+          "maxFee",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "target": {
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "maxFee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateWalletRequest": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "CreateWalletResponse": {
+        "required": [
+          "walletId",
+          "primaryKey",
+          "secondaryKey",
+          "name",
+          "address",
+          "recoveryPassphrase"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "primaryKey": {
+            "type": "string"
+          },
+          "secondaryKey": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "recoveryPassphrase": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWebhookRequest": {
+        "required": [
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateWebhookResponse": {
+        "required": [
+          "id",
+          "url",
+          "secret",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "CredentialCreateOptions": {
+        "required": [
+          "rp",
+          "user",
+          "challenge",
+          "pubKeyCredParams"
+        ],
+        "type": "object",
+        "properties": {
+          "rp": {
+            "$ref": "#/components/schemas/PublicKeyCredentialRpEntity"
+          },
+          "user": {
+            "$ref": "#/components/schemas/Fido2User"
+          },
+          "challenge": {
+            "type": "string",
+            "format": "byte"
+          },
+          "pubKeyCredParams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PubKeyCredParam"
+            }
+          },
+          "timeout": {
+            "type": "integer",
+            "format": "uint64"
+          },
+          "attestation": {
+            "$ref": "#/components/schemas/AttestationConveyancePreference"
+          },
+          "attestationFormats": {
+            "type": "array"
+          },
+          "authenticatorSelection": {
+            "$ref": "#/components/schemas/AuthenticatorSelection"
+          },
+          "hints": {
+            "type": "array"
+          },
+          "excludeCredentials": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicKeyCredentialDescriptor"
+            }
+          },
+          "extensions": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsClientInputs"
+          }
+        }
+      },
+      "CredentialPropertiesOutput": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "rk": {
+            "type": "boolean"
+          },
+          "authenticatorDisplayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "Fido2User": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "byte"
+          },
+          "displayName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "InvoiceResponse": {
+        "required": [
+          "number",
+          "status",
+          "amount",
+          "bolt11",
+          "reference",
+          "memo",
+          "txNumber",
+          "createdAt",
+          "settledAt",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "bolt11": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "memo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "txNumber": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "settledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "InvoiceStatus": {
+        "enum": [
+          "pending",
+          "settled",
+          "expired"
+        ]
+      },
+      "NullableOfAuthenticatorAttachment": { },
+      "NullableOfCredentialProtectionPolicy": { },
+      "NullableOfKeyValuePairOfstringAndAuthenticationExtensionsPRFValues": {
+        "required": [
+          "key",
+          "value"
+        ],
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "key": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "value": {
+            "$ref": "#/components/schemas/AuthenticationExtensionsPRFValues"
+          }
+        }
+      },
+      "NullableOfLargeBlobSupport": { },
+      "NullableOfUserVerificationRequirement": { },
+      "PaymentResponse": {
+        "required": [
+          "number",
+          "status",
+          "amount",
+          "maxFee",
+          "actualFee",
+          "address",
+          "reference",
+          "txNumber",
+          "failureReason",
+          "createdAt",
+          "settledAt"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "maxFee": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "actualFee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "address": {
+            "type": "string"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "txNumber": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "failureReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "settledAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentStatus": {
+        "enum": [
+          "pending",
+          "processing",
+          "settled",
+          "failed"
+        ]
+      },
+      "PubKeyCredParam": {
+        "required": [
+          "alg"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "default": "public-key"
+          },
+          "alg": {
+            "$ref": "#/components/schemas/Algorithm"
+          }
+        }
+      },
+      "PublicKeyCredentialDescriptor": {
+        "required": [
+          "type",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PublicKeyCredentialType"
+          },
+          "id": {
+            "type": "string",
+            "format": "byte"
+          },
+          "transports": {
+            "type": [
+              "null",
+              "array"
+            ]
+          }
+        }
+      },
+      "PublicKeyCredentialRpEntity": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PublicKeyCredentialType": { },
+      "RecoveryBackupResponse": {
+        "required": [
+          "passphrase"
+        ],
+        "type": "object",
+        "properties": {
+          "passphrase": {
+            "type": "string"
+          }
+        }
+      },
+      "RecoveryRestoreRequest": {
+        "required": [
+          "passphrase"
+        ],
+        "type": "object",
+        "properties": {
+          "passphrase": {
+            "type": "string"
+          }
+        }
+      },
+      "RecoveryRestoreResponse": {
+        "required": [
+          "walletId",
+          "name",
+          "primaryKey",
+          "secondaryKey"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "primaryKey": {
+            "type": "string"
+          },
+          "secondaryKey": {
+            "type": "string"
+          }
+        }
+      },
+      "ResidentKeyRequirement": { },
+      "RestorePasskeyBeginResponse": {
+        "required": [
+          "sessionId",
+          "options"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "options": {
+            "$ref": "#/components/schemas/AssertionOptions"
+          }
+        }
+      },
+      "RestorePasskeyCompleteRequest": {
+        "required": [
+          "sessionId",
+          "assertion"
+        ],
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "assertion": {
+            "$ref": "#/components/schemas/AuthenticatorAssertionRawResponse"
+          }
+        }
+      },
+      "RestorePasskeyCompleteResponse": {
+        "required": [
+          "walletId",
+          "name",
+          "primaryKey",
+          "secondaryKey"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "primaryKey": {
+            "type": "string"
+          },
+          "secondaryKey": {
+            "type": "string"
+          }
+        }
+      },
+      "RotateApiKeyResponse": {
+        "required": [
+          "key",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "TransactionResponse": {
+        "required": [
+          "number",
+          "type",
+          "amount",
+          "balanceAfter",
+          "networkFee",
+          "serviceFee",
+          "paymentHash",
+          "preimage",
+          "reference",
+          "note",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "amount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "networkFee": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "serviceFee": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentHash": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "preimage": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "TransactionType": {
+        "enum": [
+          "credit",
+          "debit"
+        ]
+      },
+      "TransferAddressRequest": {
+        "required": [
+          "targetWalletKey"
+        ],
+        "type": "object",
+        "properties": {
+          "targetWalletKey": {
+            "type": "string"
+          }
+        }
+      },
+      "TransferAddressResponse": {
+        "required": [
+          "address",
+          "transferredTo"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "transferredTo": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateWalletRequest": {
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "UserVerificationRequirement": { },
+      "WalletResponse": {
+        "required": [
+          "walletId",
+          "name",
+          "balance",
+          "onHold",
+          "available"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "balance": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "onHold": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "available": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "WebhookResponse": {
+        "required": [
+          "id",
+          "url",
+          "active",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Materialization.Core.LnBot"
+    },
+    {
+      "name": "Backup"
+    },
+    {
+      "name": "Restore"
+    },
+    {
+      "name": "Wallet"
+    },
+    {
+      "name": "API Keys"
+    },
+    {
+      "name": "Invoices"
+    },
+    {
+      "name": "Payments"
+    },
+    {
+      "name": "Addresses"
+    },
+    {
+      "name": "Transactions"
+    },
+    {
+      "name": "Webhooks"
+    }
+  ]
+}
