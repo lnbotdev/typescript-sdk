@@ -13,7 +13,7 @@ Give your AI agents, apps, and services access to Bitcoin over the Lightning Net
 ```typescript
 import { LnBot } from "@lnbot/sdk";
 
-const ln = new LnBot({ apiKey: "lnbot_..." });
+const ln = new LnBot({ apiKey: "key_..." });
 
 await ln.payments.create({ target: "alice@ln.bot", amount: 1000 });
 ```
