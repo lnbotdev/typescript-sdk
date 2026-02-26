@@ -1,6 +1,6 @@
 {
   "name": "@lnbot/sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Official TypeScript SDK for LnBot — Bitcoin for AI Agents. Send and receive sats over Lightning with a few lines of code. Zero dependencies.",
   "type": "module",
   "main": "./dist/index.cjs",
