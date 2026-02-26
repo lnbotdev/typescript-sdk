@@ -129,7 +129,7 @@ export class InvoicesResource {
    * @param timeout Max wait in seconds (default 60, max 300)
    * @param signal  Optional AbortSignal
    */
-  async *waitForSettlement(
+  async *watch(
     number: number,
     timeout?: number,
     signal?: AbortSignal,

@@ -18,7 +18,7 @@ const ln = new LnBot({ apiKey: "key_..." });
 await ln.payments.create({ target: "alice@ln.bot", amount: 1000 });
 ```
 
-> LnBot also ships a **[CLI](https://ln.bot/docs)** and **[MCP server](https://ln.bot/docs)** for agents that speak Model Context Protocol. Use whichever interface fits your stack.
+> LnBot also ships a **[Python SDK](https://pypi.org/project/lnbot/)**, **[Go SDK](https://pkg.go.dev/github.com/lnbotdev/go-sdk)**, **[Rust SDK](https://crates.io/crates/lnbot)**, **[CLI](https://ln.bot/docs)**, and **[MCP server](https://ln.bot/docs)**.
 
 ---
 
@@ -90,7 +90,7 @@ console.log(invoice.bolt11); // share with the payer
 ### 3. Wait for payment
 
 ```typescript
-for await (const event of ln.invoices.waitForSettlement(invoice.number)) {
+for await (const event of ln.invoices.watch(invoice.number)) {
   if (event.event === "settled") {
     console.log("Paid!");
   }
@@ -250,7 +250,7 @@ try {
 import { LnBot } from "@lnbot/sdk";
 
 const ln = new LnBot({
-  apiKey: "lnbot_...",              // optional — not needed for wallet creation or restore
+  apiKey: "key_...",              // optional — not needed for wallet creation or restore
   baseUrl: "https://api.ln.bot",   // optional — this is the default
   fetch: customFetch,              // optional — bring your own fetch for testing or proxies
 });
@@ -275,7 +275,7 @@ const ln = new LnBot({
 | `ln.invoices.create(req)` | Create a BOLT11 invoice to receive sats |
 | `ln.invoices.list(params?)` | List invoices |
 | `ln.invoices.get(number)` | Get invoice by number |
-| `ln.invoices.waitForSettlement(number, timeout?, signal?)` | SSE stream — yields when invoice settles or expires |
+| `ln.invoices.watch(number, timeout?, signal?)` | SSE stream — yields when invoice settles or expires |
 
 ### Payments
 
@@ -352,6 +352,12 @@ LnBot isn't just an SDK — pick the interface that fits your stack:
 - [Documentation](https://ln.bot/docs)
 - [GitHub](https://github.com/lnbotdev)
 - [npm](https://www.npmjs.com/package/@lnbot/sdk)
+
+## Other SDKs
+
+- [Python SDK](https://github.com/lnbotdev/python-sdk) · [pypi](https://pypi.org/project/lnbot/)
+- [Go SDK](https://github.com/lnbotdev/go-sdk) · [pkg.go.dev](https://pkg.go.dev/github.com/lnbotdev/go-sdk)
+- [Rust SDK](https://github.com/lnbotdev/rust-sdk) · [crates.io](https://crates.io/crates/lnbot) · [docs.rs](https://docs.rs/lnbot)
 
 ## License
 

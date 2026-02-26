@@ -6,10 +6,7 @@
   },
   "servers": [
     {
-      "url": "https://localhost:52749"
-    },
-    {
-      "url": "http://localhost:52750"
+      "url": "https://api.ln.bot"
     }
   ],
   "paths": {
