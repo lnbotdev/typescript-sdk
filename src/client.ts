@@ -9,13 +9,13 @@ import {
 import type {
   AddressInvoiceResponse,
   AddressResponse,
-  ApiKeyResponse,
   BackupPasskeyBeginResponse,
   BackupPasskeyCompleteRequest,
   CreateAddressRequest,
   CreateInvoiceForAddressRequest,
   CreateInvoiceForWalletRequest,
   CreateInvoiceRequest,
+  CreateL402ChallengeRequest,
   CreatePaymentRequest,
   CreateWalletRequest,
   CreateWalletResponse,
@@ -24,11 +24,14 @@ import type {
   CreateWebhookResponse,
   InvoiceEvent,
   InvoiceResponse,
+  L402ChallengeResponse,
+  L402PayResponse,
   ListInvoicesParams,
   ListPaymentsParams,
   ListTransactionsParams,
   LnBotConfig,
   WalletResponse,
+  PayL402Request,
   PaymentEvent,
   PaymentResponse,
   RecoveryBackupResponse,
@@ -41,6 +44,8 @@ import type {
   TransactionResponse,
   TransferAddressRequest,
   TransferAddressResponse,
+  VerifyL402Request,
+  VerifyL402Response,
   WalletEvent,
   WebhookResponse,
 } from "./types.js";
@@ -95,11 +100,6 @@ export class WalletsResource {
 export class KeysResource {
   /** @internal */ constructor(private readonly _http: HttpClient) {}
 
-  /** Lists both API keys (metadata only, secrets not included). */
-  list(): Promise<ApiKeyResponse[]> {
-    return this._http.get("/v1/keys");
-  }
-
   /**
    * Rotates the key in the given slot (0 = primary, 1 = secondary).
    * The old key is immediately invalidated.
@@ -122,9 +122,9 @@ export class InvoicesResource {
     return this._http.get(`/v1/invoices${qs({ ...params })}`);
   }
 
-  /** Returns a specific invoice by its number. */
-  get(number: number): Promise<InvoiceResponse> {
-    return this._http.get(`/v1/invoices/${number}`);
+  /** Returns a specific invoice by number or payment hash. */
+  get(numberOrHash: number | string): Promise<InvoiceResponse> {
+    return this._http.get(`/v1/invoices/${encodeURIComponent(numberOrHash)}`);
   }
 
   /** Creates an invoice for a specific wallet by ID. No authentication required. */
@@ -142,12 +142,12 @@ export class InvoicesResource {
    * Returns an async iterable of events. The stream closes after the
    * terminal event.
    *
-   * @param number  Invoice number
+   * @param numberOrHash  Invoice number or payment hash
    * @param timeout Max wait in seconds (default 60, max 300)
    * @param signal  Optional AbortSignal
    */
   async *watch(
-    number: number,
+    numberOrHash: number | string,
     timeout?: number,
     signal?: AbortSignal,
   ): AsyncGenerator<InvoiceEvent> {
@@ -155,7 +155,7 @@ export class InvoicesResource {
     const q = qs({ timeout });
     const headers: Record<string, string> = { Accept: "text/event-stream" };
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-    const res = await _fetch(`${baseUrl}/v1/invoices/${number}/events${q}`, {
+    const res = await _fetch(`${baseUrl}/v1/invoices/${encodeURIComponent(numberOrHash)}/events${q}`, {
       method: "GET",
       headers,
       signal,
@@ -218,9 +218,9 @@ export class PaymentsResource {
     return this._http.get(`/v1/payments${qs({ ...params })}`);
   }
 
-  /** Returns a specific payment by its number. */
-  get(number: number): Promise<PaymentResponse> {
-    return this._http.get(`/v1/payments/${number}`);
+  /** Returns a specific payment by number or payment hash. */
+  get(numberOrHash: number | string): Promise<PaymentResponse> {
+    return this._http.get(`/v1/payments/${encodeURIComponent(numberOrHash)}`);
   }
 
   /**
@@ -228,12 +228,12 @@ export class PaymentsResource {
    * Returns an async iterable of events. The stream closes after the
    * terminal event.
    *
-   * @param number  Payment number
+   * @param numberOrHash  Payment number or payment hash
    * @param timeout Max wait in seconds (default 60, max 300)
    * @param signal  Optional AbortSignal
    */
   async *watch(
-    number: number,
+    numberOrHash: number | string,
     timeout?: number,
     signal?: AbortSignal,
   ): AsyncGenerator<PaymentEvent> {
@@ -241,7 +241,7 @@ export class PaymentsResource {
     const q = qs({ timeout });
     const headers: Record<string, string> = { Accept: "text/event-stream" };
     if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
-    const res = await _fetch(`${baseUrl}/v1/payments/${number}/events${q}`, {
+    const res = await _fetch(`${baseUrl}/v1/payments/${encodeURIComponent(numberOrHash)}/events${q}`, {
       method: "GET",
       headers,
       signal,
@@ -438,6 +438,25 @@ export class RestoreResource {
   }
 }
 
+export class L402Resource {
+  /** @internal */ constructor(private readonly _http: HttpClient) {}
+
+  /** Creates an L402 challenge (invoice + macaroon) for paywall authentication. */
+  createChallenge(req: CreateL402ChallengeRequest): Promise<L402ChallengeResponse> {
+    return this._http.post("/v1/l402/challenges", req);
+  }
+
+  /** Verifies an L402 authorization token (stateless — checks signature, preimage, and caveats). */
+  verify(req: VerifyL402Request): Promise<VerifyL402Response> {
+    return this._http.post("/v1/l402/verify", req);
+  }
+
+  /** Pays an L402 challenge and returns a ready-to-use Authorization header. */
+  pay(req: PayL402Request): Promise<L402PayResponse> {
+    return this._http.post("/v1/l402/pay", req);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Main client
 // ---------------------------------------------------------------------------
@@ -455,6 +474,7 @@ export class LnBot {
   readonly events: EventsResource;
   readonly backup: BackupResource;
   readonly restore: RestoreResource;
+  readonly l402: L402Resource;
 
   constructor(config: LnBotConfig = {}) {
     const baseUrl = (config.baseUrl ?? "https://api.ln.bot").replace(/\/+$/, "");
@@ -479,6 +499,7 @@ export class LnBot {
     this.events = new EventsResource(this._http);
     this.backup = new BackupResource(this._http);
     this.restore = new RestoreResource(this._http);
+    this.l402 = new L402Resource(this._http);
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

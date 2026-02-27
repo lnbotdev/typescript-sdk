@@ -10,6 +10,7 @@ export {
   EventsResource,
   BackupResource,
   RestoreResource,
+  L402Resource,
 } from "./client.js";
 
 export { LnBotError, BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError } from "./errors.js";
@@ -19,11 +20,11 @@ export type {
   InvoiceStatus,
   PaymentStatus,
   TransactionType,
+  L402PaymentStatus,
   WalletResponse,
   CreateWalletRequest,
   CreateWalletResponse,
   UpdateWalletRequest,
-  ApiKeyResponse,
   RotateApiKeyResponse,
   CreateInvoiceRequest,
   CreateInvoiceForWalletRequest,
@@ -43,6 +44,12 @@ export type {
   CreateWebhookRequest,
   CreateWebhookResponse,
   WebhookResponse,
+  CreateL402ChallengeRequest,
+  L402ChallengeResponse,
+  VerifyL402Request,
+  VerifyL402Response,
+  PayL402Request,
+  L402PayResponse,
   RecoveryBackupResponse,
   RecoveryRestoreRequest,
   RecoveryRestoreResponse,

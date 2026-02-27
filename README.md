@@ -168,7 +168,6 @@ await ln.webhooks.delete(hook.id);
 Each wallet has a primary and secondary key for zero-downtime rotation:
 
 ```typescript
-const keys = await ln.keys.list();
 const rotated = await ln.keys.rotate(0); // 0 = primary, 1 = secondary
 // rotated.key — new plaintext key, shown once
 ```
@@ -200,6 +199,25 @@ await ln.backup.passkeyComplete({
 ```
 
 ---
+
+## L402 paywalls
+
+Monetize APIs with Lightning-native authentication:
+
+```typescript
+// Create a challenge (server side)
+const challenge = await ln.l402.createChallenge({
+  amount: 100,
+  description: "API access",
+  expirySeconds: 3600,
+});
+
+// Pay the challenge (client side)
+const result = await ln.l402.pay({ wwwAuthenticate: challenge.wwwAuthenticate });
+
+// Verify a token (server side, stateless)
+const { valid } = await ln.l402.verify({ authorization: result.authorization! });
+```
 
 ## Pagination
 
@@ -312,7 +330,6 @@ const ln = new LnBot({
 
 | Method | Description |
 | --- | --- |
-| `ln.keys.list()` | List API keys (metadata only) |
 | `ln.keys.rotate(slot)` | Rotate a key (0 = primary, 1 = secondary) |
 
 ### Backup

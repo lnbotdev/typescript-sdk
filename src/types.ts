@@ -44,14 +44,6 @@ export interface CreateWalletResponse {
 // API Keys
 // ---------------------------------------------------------------------------
 
-export interface ApiKeyResponse {
-  id: string;
-  name: string;
-  hint: string;
-  createdAt: string | null;
-  lastUsedAt: string | null;
-}
-
 export interface RotateApiKeyResponse {
   key: string;
   name: string;
@@ -339,6 +331,82 @@ export interface AuthenticatorAssertionRawResponse {
   } | null;
   clientExtensionResults: Record<string, unknown>;
   extensions?: Record<string, unknown> | null;
+}
+
+// ---------------------------------------------------------------------------
+// L402
+// ---------------------------------------------------------------------------
+
+export type L402PaymentStatus = "pending" | "processing" | "settled" | "failed";
+
+export interface CreateL402ChallengeRequest {
+  /** Amount in sats */
+  amount: number;
+  /** Description embedded in the Lightning invoice */
+  description?: string | null;
+  /** Token expiry in seconds (adds an expiry caveat to the macaroon) */
+  expirySeconds?: number | null;
+  /** Custom caveats to embed in the macaroon (key=value format, max 10) */
+  caveats?: string[] | null;
+}
+
+export interface L402ChallengeResponse {
+  /** Base64-encoded macaroon token */
+  macaroon: string;
+  /** BOLT11 Lightning invoice to be paid */
+  invoice: string;
+  /** Hex-encoded SHA-256 payment hash */
+  paymentHash: string;
+  /** When the Lightning invoice expires */
+  expiresAt: string;
+  /** Pre-formatted WWW-Authenticate header value */
+  wwwAuthenticate: string;
+}
+
+export interface VerifyL402Request {
+  /** L402 authorization token: L402 <base64_macaroon>:<hex_preimage> */
+  authorization: string;
+}
+
+export interface VerifyL402Response {
+  /** Whether the token is valid */
+  valid: boolean;
+  /** Hex-encoded payment hash extracted from the macaroon */
+  paymentHash: string | null;
+  /** Caveats extracted from the macaroon */
+  caveats: string[] | null;
+  /** Error message if validation failed */
+  error: string | null;
+}
+
+export interface PayL402Request {
+  /** WWW-Authenticate header value from an HTTP 402 response */
+  wwwAuthenticate: string;
+  /** Maximum routing fee in sats */
+  maxFee?: number | null;
+  /** Reference string stored with the payment */
+  reference?: string | null;
+  /** If true, polls for settlement before returning (default: true) */
+  wait?: boolean | null;
+  /** Max seconds to wait for settlement (1–120, default 60) */
+  timeout?: number | null;
+}
+
+export interface L402PayResponse {
+  /** Ready-to-use Authorization header value, or null if not yet settled */
+  authorization: string | null;
+  /** Hex-encoded SHA-256 payment hash */
+  paymentHash: string;
+  /** Hex-encoded preimage (proof of payment), or null if not yet settled */
+  preimage: string | null;
+  /** Payment amount in sats */
+  amount: number;
+  /** Actual routing fee in sats, or null if not yet settled */
+  fee: number | null;
+  /** Payment number for status polling */
+  paymentNumber: number;
+  /** Current payment status */
+  status: L402PaymentStatus;
 }
 
 // ---------------------------------------------------------------------------
