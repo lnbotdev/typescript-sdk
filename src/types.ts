@@ -77,6 +77,7 @@ export interface InvoiceResponse {
   bolt11: string;
   reference: string | null;
   memo: string | null;
+  preimage: string | null;
   txNumber: number | null;
   createdAt: string | null;
   settledAt: string | null;
@@ -138,9 +139,11 @@ export interface PaymentResponse {
   status: PaymentStatus;
   amount: number;
   maxFee: number;
+  serviceFee: number;
   actualFee: number | null;
   address: string;
   reference: string | null;
+  preimage: string | null;
   txNumber: number | null;
   failureReason: string | null;
   createdAt: string | null;
@@ -350,6 +353,23 @@ export interface InvoiceEvent {
 export interface PaymentEvent {
   event: "settled" | "failed";
   data: PaymentResponse;
+}
+
+// ---------------------------------------------------------------------------
+// Wallet event stream
+// ---------------------------------------------------------------------------
+
+export type WalletEventType =
+  | "invoice.created"
+  | "invoice.settled"
+  | "payment.created"
+  | "payment.settled"
+  | "payment.failed";
+
+export interface WalletEvent {
+  event: WalletEventType;
+  createdAt: string;
+  data: InvoiceResponse | PaymentResponse;
 }
 
 // ---------------------------------------------------------------------------

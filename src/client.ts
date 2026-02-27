@@ -39,6 +39,7 @@ import type {
   TransactionResponse,
   TransferAddressRequest,
   TransferAddressResponse,
+  WalletEvent,
   WebhookResponse,
 } from "./types.js";
 
@@ -340,6 +341,63 @@ export class WebhooksResource {
   }
 }
 
+export class EventsResource {
+  /** @internal */ constructor(private readonly _http: HttpClient) {}
+
+  /**
+   * Opens an SSE stream of all wallet events.
+   * Events: invoice.created, invoice.settled, payment.created,
+   * payment.settled, payment.failed.
+   *
+   * @param signal  Optional AbortSignal
+   */
+  async *stream(signal?: AbortSignal): AsyncGenerator<WalletEvent> {
+    const { fetch: _fetch, baseUrl, apiKey } = this._http.raw;
+    const headers: Record<string, string> = { Accept: "text/event-stream" };
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+    const res = await _fetch(`${baseUrl}/v1/events`, {
+      method: "GET",
+      headers,
+      signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new LnBotError(res.statusText, res.status, text);
+    }
+
+    if (!res.body) return;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop()!;
+
+        for (const line of lines) {
+          if (!line.startsWith("data:")) continue;
+          const raw = line.slice(5).trim();
+          if (!raw) continue;
+          try {
+            yield JSON.parse(raw) as WalletEvent;
+          } catch {
+            // non-JSON keepalive, skip
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
 export class BackupResource {
   /** @internal */ constructor(private readonly _http: HttpClient) {}
 
@@ -392,6 +450,7 @@ export class LnBot {
   readonly addresses: AddressesResource;
   readonly transactions: TransactionsResource;
   readonly webhooks: WebhooksResource;
+  readonly events: EventsResource;
   readonly backup: BackupResource;
   readonly restore: RestoreResource;
 
@@ -415,6 +474,7 @@ export class LnBot {
     this.addresses = new AddressesResource(this._http);
     this.transactions = new TransactionsResource(this._http);
     this.webhooks = new WebhooksResource(this._http);
+    this.events = new EventsResource(this._http);
     this.backup = new BackupResource(this._http);
     this.restore = new RestoreResource(this._http);
   }

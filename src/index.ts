@@ -7,6 +7,7 @@ export {
   AddressesResource,
   TransactionsResource,
   WebhooksResource,
+  EventsResource,
   BackupResource,
   RestoreResource,
 } from "./client.js";
@@ -52,6 +53,8 @@ export type {
   RestorePasskeyCompleteResponse,
   InvoiceEvent,
   PaymentEvent,
+  WalletEvent,
+  WalletEventType,
   CredentialCreateOptions,
   AssertionOptions,
   AuthenticatorAttestationRawResponse,
