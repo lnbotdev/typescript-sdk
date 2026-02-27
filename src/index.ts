@@ -12,7 +12,7 @@ export {
   RestoreResource,
 } from "./client.js";
 
-export { LnBotError, BadRequestError, NotFoundError, ConflictError } from "./errors.js";
+export { LnBotError, BadRequestError, UnauthorizedError, ForbiddenError, NotFoundError, ConflictError } from "./errors.js";
 
 export type {
   LnBotConfig,

@@ -1,3 +1,12 @@
+function extractMessage(body: string, fallback: string): string {
+  try {
+    const data = JSON.parse(body);
+    return data?.message || data?.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export class LnBotError extends Error {
   constructor(
     message: string,
@@ -11,21 +20,35 @@ export class LnBotError extends Error {
 
 export class BadRequestError extends LnBotError {
   constructor(body: string) {
-    super("Bad Request", 400, body);
+    super(extractMessage(body, "Bad Request"), 400, body);
     this.name = "BadRequestError";
+  }
+}
+
+export class UnauthorizedError extends LnBotError {
+  constructor(body: string) {
+    super(extractMessage(body, "Unauthorized"), 401, body);
+    this.name = "UnauthorizedError";
+  }
+}
+
+export class ForbiddenError extends LnBotError {
+  constructor(body: string) {
+    super(extractMessage(body, "Forbidden"), 403, body);
+    this.name = "ForbiddenError";
   }
 }
 
 export class NotFoundError extends LnBotError {
   constructor(body: string) {
-    super("Not Found", 404, body);
+    super(extractMessage(body, "Not Found"), 404, body);
     this.name = "NotFoundError";
   }
 }
 
 export class ConflictError extends LnBotError {
   constructor(body: string) {
-    super("Conflict", 409, body);
+    super(extractMessage(body, "Conflict"), 409, body);
     this.name = "ConflictError";
   }
 }

@@ -1,8 +1,10 @@
 import {
   BadRequestError,
   ConflictError,
+  ForbiddenError,
   LnBotError,
   NotFoundError,
+  UnauthorizedError,
 } from "./errors.js";
 import type {
   AddressInvoiceResponse,
@@ -502,6 +504,10 @@ export class LnBot {
       switch (res.status) {
         case 400:
           throw new BadRequestError(text);
+        case 401:
+          throw new UnauthorizedError(text);
+        case 403:
+          throw new ForbiddenError(text);
         case 404:
           throw new NotFoundError(text);
         case 409:
