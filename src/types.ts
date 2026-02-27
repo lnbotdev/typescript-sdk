@@ -88,12 +88,40 @@ export interface ListInvoicesParams {
   after?: number;
 }
 
+export interface CreateInvoiceForWalletRequest {
+  /** Wallet ID in wal_xxx format */
+  walletId: string;
+  /** Amount in sats */
+  amount: number;
+  /** Caller-defined reference for tracking */
+  reference?: string | null;
+  /** Comment visible to the recipient */
+  comment?: string | null;
+}
+
+export interface CreateInvoiceForAddressRequest {
+  /** Lightning address (user@domain) */
+  address: string;
+  /** Amount in sats */
+  amount: number;
+  /** LNURL pay tag */
+  tag?: string | null;
+  /** Comment visible to the recipient */
+  comment?: string | null;
+}
+
+export interface AddressInvoiceResponse {
+  bolt11: string;
+  amount: number;
+  expiresAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Payments
 // ---------------------------------------------------------------------------
 
 export interface CreatePaymentRequest {
-  /** Lightning address (user@domain) or BOLT11 invoice string */
+  /** Lightning address (user@domain), LNURL, or BOLT11 invoice string */
   target: string;
   /** Amount in sats (required for addresses, optional for BOLT11) */
   amount?: number | null;
@@ -311,12 +339,17 @@ export interface AuthenticatorAssertionRawResponse {
 }
 
 // ---------------------------------------------------------------------------
-// SSE invoice events
+// SSE events
 // ---------------------------------------------------------------------------
 
 export interface InvoiceEvent {
   event: "settled" | "expired";
   data: InvoiceResponse;
+}
+
+export interface PaymentEvent {
+  event: "settled" | "failed";
+  data: PaymentResponse;
 }
 
 // ---------------------------------------------------------------------------

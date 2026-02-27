@@ -5,11 +5,14 @@ import {
   NotFoundError,
 } from "./errors.js";
 import type {
+  AddressInvoiceResponse,
   AddressResponse,
   ApiKeyResponse,
   BackupPasskeyBeginResponse,
   BackupPasskeyCompleteRequest,
   CreateAddressRequest,
+  CreateInvoiceForAddressRequest,
+  CreateInvoiceForWalletRequest,
   CreateInvoiceRequest,
   CreatePaymentRequest,
   CreateWalletRequest,
@@ -24,6 +27,7 @@ import type {
   ListTransactionsParams,
   LnBotConfig,
   WalletResponse,
+  PaymentEvent,
   PaymentResponse,
   RecoveryBackupResponse,
   RecoveryRestoreRequest,
@@ -120,6 +124,16 @@ export class InvoicesResource {
     return this._http.get(`/v1/invoices/${number}`);
   }
 
+  /** Creates an invoice for a specific wallet by ID. No authentication required. */
+  createForWallet(req: CreateInvoiceForWalletRequest): Promise<AddressInvoiceResponse> {
+    return this._http.post("/v1/invoices/for-wallet", req);
+  }
+
+  /** Creates an invoice for a Lightning address. No authentication required. */
+  createForAddress(req: CreateInvoiceForAddressRequest): Promise<AddressInvoiceResponse> {
+    return this._http.post("/v1/invoices/for-address", req);
+  }
+
   /**
    * Opens an SSE stream that resolves when the invoice settles or expires.
    * Returns an async iterable of events. The stream closes after the
@@ -191,7 +205,7 @@ export class InvoicesResource {
 export class PaymentsResource {
   /** @internal */ constructor(private readonly _http: HttpClient) {}
 
-  /** Sends sats to a Lightning address or BOLT11 invoice. */
+  /** Sends sats to a Lightning address, LNURL, or BOLT11 invoice. */
   create(req: CreatePaymentRequest): Promise<PaymentResponse> {
     return this._http.post("/v1/payments", req);
   }
@@ -204,6 +218,73 @@ export class PaymentsResource {
   /** Returns a specific payment by its number. */
   get(number: number): Promise<PaymentResponse> {
     return this._http.get(`/v1/payments/${number}`);
+  }
+
+  /**
+   * Opens an SSE stream that resolves when the payment settles or fails.
+   * Returns an async iterable of events. The stream closes after the
+   * terminal event.
+   *
+   * @param number  Payment number
+   * @param timeout Max wait in seconds (default 60, max 300)
+   * @param signal  Optional AbortSignal
+   */
+  async *watch(
+    number: number,
+    timeout?: number,
+    signal?: AbortSignal,
+  ): AsyncGenerator<PaymentEvent> {
+    const { fetch: _fetch, baseUrl, apiKey } = this._http.raw;
+    const q = qs({ timeout });
+    const headers: Record<string, string> = { Accept: "text/event-stream" };
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+    const res = await _fetch(`${baseUrl}/v1/payments/${number}/events${q}`, {
+      method: "GET",
+      headers,
+      signal,
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new LnBotError(res.statusText, res.status, text);
+    }
+
+    if (!res.body) return;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let eventType = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop()!;
+
+        for (const line of lines) {
+          if (line.startsWith("event:")) {
+            eventType = line.slice(6).trim();
+          } else if (line.startsWith("data:")) {
+            const raw = line.slice(5).trim();
+            if (raw && eventType) {
+              try {
+                const data = JSON.parse(raw) as PaymentResponse;
+                yield { event: eventType as PaymentEvent["event"], data };
+              } catch {
+                // non-JSON data line (keepalive), skip
+              }
+              eventType = "";
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
   }
 }
 
