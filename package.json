@@ -30,6 +30,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "fetch-spec": "curl -s https://api.ln.bot/openapi/v1.json > openapi.json"
@@ -48,7 +49,8 @@
   },
   "devDependencies": {
     "tsup": "^8",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.18"
   },
   "keywords": [
     "lnbot",
