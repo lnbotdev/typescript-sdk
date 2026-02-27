@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-blue)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-**The official TypeScript SDK for [LnBot](https://ln.bot)** — Bitcoin for AI Agents.
+**The official TypeScript SDK for [ln.bot](https://ln.bot)** — Bitcoin for AI Agents.
 
 Give your AI agents, apps, and services access to Bitcoin over the Lightning Network. Create wallets, send and receive sats, and get real-time payment notifications — all in a few lines of code.
 
@@ -18,11 +18,11 @@ const ln = new LnBot({ apiKey: "key_..." });
 await ln.payments.create({ target: "alice@ln.bot", amount: 1000 });
 ```
 
-> LnBot also ships a **[Python SDK](https://pypi.org/project/lnbot/)**, **[Go SDK](https://pkg.go.dev/github.com/lnbotdev/go-sdk)**, **[Rust SDK](https://crates.io/crates/lnbot)**, **[CLI](https://ln.bot/docs)**, and **[MCP server](https://ln.bot/docs)**.
+> ln.bot also ships a **[Python SDK](https://pypi.org/project/lnbot/)**, **[Go SDK](https://pkg.go.dev/github.com/lnbotdev/go-sdk)**, **[Rust SDK](https://crates.io/crates/lnbot)**, **[CLI](https://ln.bot/docs)**, and **[MCP server](https://ln.bot/docs)**.
 
 ---
 
-## Why LnBot?
+## Why ln.bot?
 
 - **Built for agents** — programmatic wallets, API keys, and idempotent payments designed for autonomous software
 - **Instant settlement** — payments arrive in seconds, not days
@@ -340,7 +340,7 @@ const ln = new LnBot({
 
 ## Other interfaces
 
-LnBot isn't just an SDK — pick the interface that fits your stack:
+ln.bot isn't just an SDK — pick the interface that fits your stack:
 
 - **[CLI](https://ln.bot/docs)** — `lnbot pay lnbc1...f3q --amount 1000`
 - **[MCP Server](https://ln.bot/docs)** — Model Context Protocol for AI agents
