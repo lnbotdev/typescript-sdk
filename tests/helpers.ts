@@ -80,7 +80,7 @@ export function mockTextFetch(
   };
 }
 
-/** Creates an LnBot client with a mock fetch */
+/** Creates an LnBot client with a mock fetch and a wallet handle */
 export function createClient(
   responseBody: unknown,
   status = 200,

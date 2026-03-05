@@ -30,7 +30,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/integration.test.ts",
+    "test:integration": "vitest run tests/integration.test.ts",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "fetch-spec": "curl -s https://api.ln.bot/openapi/v1.json > openapi.json"

@@ -58,7 +58,7 @@ describe("invoices.watch", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.invoices.watch(1)) {
+    for await (const event of client.wallet("wal_1").invoices.watch(1)) {
       events.push(event);
     }
 
@@ -78,7 +78,7 @@ describe("invoices.watch", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.invoices.watch(1)) {
+    for await (const event of client.wallet("wal_1").invoices.watch(1)) {
       events.push(event);
     }
 
@@ -96,7 +96,7 @@ describe("invoices.watch", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.invoices.watch(1)) {
+    for await (const event of client.wallet("wal_1").invoices.watch(1)) {
       events.push(event);
     }
 
@@ -113,12 +113,10 @@ describe("invoices.watch", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.invoices.watch(1)) {
+    for await (const event of client.wallet("wal_1").invoices.watch(1)) {
       events.push(event);
     }
 
-    // The keepalive line has no event: prefix, so it's skipped
-    // (data: without preceding event: is ignored because eventType is "")
     expect(events).toHaveLength(1);
     expect(events[0].event).toBe("settled");
   });
@@ -126,16 +124,15 @@ describe("invoices.watch", () => {
   it("builds correct URL with timeout", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    for await (const _ of client.invoices.watch(42, 120)) { /* empty */ }
-    expect(mock.url()).toContain("/v1/invoices/42/events");
+    for await (const _ of client.wallet("wal_1").invoices.watch(42, 120)) { /* empty */ }
+    expect(mock.url()).toContain("/v1/wallets/wal_1/invoices/42/events");
     expect(mock.url()).toContain("timeout=120");
   });
 
   it("sends correct headers", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    for await (const _ of client.invoices.watch(1)) { /* empty */ }
+    for await (const _ of client.wallet("wal_1").invoices.watch(1)) { /* empty */ }
     expect(mock.headers()["Accept"]).toBe("text/event-stream");
     expect(mock.headers()["Authorization"]).toBe("Bearer key_test");
   });
@@ -145,7 +142,7 @@ describe("invoices.watch", () => {
     const client = new LnBot({ apiKey: "bad_key", fetch: mock.fetch });
 
     await expect(async () => {
-      for await (const _ of client.invoices.watch(1)) { /* empty */ }
+      for await (const _ of client.wallet("wal_1").invoices.watch(1)) { /* empty */ }
     }).rejects.toThrow(LnBotError);
   });
 
@@ -160,7 +157,7 @@ describe("invoices.watch", () => {
 
     const client = new LnBot({ apiKey: "key_test", fetch });
     const events = [];
-    for await (const event of client.invoices.watch(1)) {
+    for await (const event of client.wallet("wal_1").invoices.watch(1)) {
       events.push(event);
     }
     expect(events).toHaveLength(0);
@@ -169,8 +166,8 @@ describe("invoices.watch", () => {
   it("encodes path parameter", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    for await (const _ of client.invoices.watch("hash/special")) { /* empty */ }
-    expect(mock.url()).toContain("/v1/invoices/hash%2Fspecial/events");
+    for await (const _ of client.wallet("wal_1").invoices.watch("hash/special")) { /* empty */ }
+    expect(mock.url()).toContain("/v1/wallets/wal_1/invoices/hash%2Fspecial/events");
   });
 });
 
@@ -188,7 +185,7 @@ describe("payments.watch", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.payments.watch(1)) {
+    for await (const event of client.wallet("wal_1").payments.watch(1)) {
       events.push(event);
     }
 
@@ -200,8 +197,8 @@ describe("payments.watch", () => {
   it("builds correct URL", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    for await (const _ of client.payments.watch(7, 60)) { /* empty */ }
-    expect(mock.url()).toContain("/v1/payments/7/events");
+    for await (const _ of client.wallet("wal_1").payments.watch(7, 60)) { /* empty */ }
+    expect(mock.url()).toContain("/v1/wallets/wal_1/payments/7/events");
     expect(mock.url()).toContain("timeout=60");
   });
 });
@@ -220,7 +217,7 @@ describe("events.stream", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.events.stream()) {
+    for await (const event of client.wallet("wal_1").events.stream()) {
       events.push(event);
     }
 
@@ -237,7 +234,7 @@ describe("events.stream", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     const events = [];
-    for await (const event of client.events.stream()) {
+    for await (const event of client.wallet("wal_1").events.stream()) {
       events.push(event);
     }
 
@@ -248,14 +245,14 @@ describe("events.stream", () => {
   it("builds correct URL", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    for await (const _ of client.events.stream()) { /* empty */ }
-    expect(mock.url()).toContain("/v1/events");
+    for await (const _ of client.wallet("wal_1").events.stream()) { /* empty */ }
+    expect(mock.url()).toContain("/v1/wallets/wal_1/events");
   });
 
   it("sends correct headers", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
-    for await (const _ of client.events.stream()) { /* empty */ }
+    for await (const _ of client.wallet("wal_1").events.stream()) { /* empty */ }
     expect(mock.headers()["Accept"]).toBe("text/event-stream");
     expect(mock.headers()["Authorization"]).toBe("Bearer key_test");
   });
@@ -263,7 +260,7 @@ describe("events.stream", () => {
   it("omits auth header when no apiKey", async () => {
     const mock = sseFetch([]);
     const client = new LnBot({ fetch: mock.fetch });
-    for await (const _ of client.events.stream()) { /* empty */ }
+    for await (const _ of client.wallet("wal_1").events.stream()) { /* empty */ }
     expect(mock.headers()["Authorization"]).toBeUndefined();
   });
 
@@ -272,7 +269,7 @@ describe("events.stream", () => {
     const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
 
     await expect(async () => {
-      for await (const _ of client.events.stream()) { /* empty */ }
+      for await (const _ of client.wallet("wal_1").events.stream()) { /* empty */ }
     }).rejects.toThrow(LnBotError);
   });
 });

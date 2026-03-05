@@ -2,42 +2,88 @@ import { describe, it, expect } from "vitest";
 import { createClient } from "./helpers.js";
 
 // ---------------------------------------------------------------------------
-// Wallets
+// Wallets (top-level)
 // ---------------------------------------------------------------------------
 
 describe("wallets", () => {
   it("create posts to /v1/wallets", async () => {
-    const { client, captured } = createClient({ walletId: "wal_1", primaryKey: "k1", secondaryKey: "k2" });
-    await client.wallets.create({ name: "Test" });
+    const { client, captured } = createClient({ walletId: "wal_1", name: "Test", address: "x@ln.bot" });
+    await client.wallets.create();
     expect(captured().method).toBe("POST");
     expect(captured().url).toContain("/v1/wallets");
-    expect(captured().body).toEqual({ name: "Test" });
   });
 
-  it("create works without args", async () => {
-    const { client, captured } = createClient({ walletId: "wal_1" });
-    await client.wallets.create();
-    expect(captured().body).toBeUndefined();
-  });
-
-  it("current gets /v1/wallets/current", async () => {
-    const { client, captured } = createClient({ walletId: "wal_1" });
-    await client.wallets.current();
+  it("list gets /v1/wallets", async () => {
+    const { client, captured } = createClient([]);
+    await client.wallets.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/wallets/current");
-  });
-
-  it("update patches /v1/wallets/current", async () => {
-    const { client, captured } = createClient({ walletId: "wal_1" });
-    await client.wallets.update({ name: "New" });
-    expect(captured().method).toBe("PATCH");
-    expect(captured().url).toContain("/v1/wallets/current");
-    expect(captured().body).toEqual({ name: "New" });
+    expect(captured().url).toContain("/v1/wallets");
   });
 });
 
 // ---------------------------------------------------------------------------
-// Keys
+// Wallet handle
+// ---------------------------------------------------------------------------
+
+describe("wallet(id)", () => {
+  it("get fetches /v1/wallets/{id}", async () => {
+    const { client, captured } = createClient({ walletId: "wal_1" });
+    await client.wallet("wal_1").get();
+    expect(captured().method).toBe("GET");
+    expect(captured().url).toContain("/v1/wallets/wal_1");
+  });
+
+  it("update patches /v1/wallets/{id}", async () => {
+    const { client, captured } = createClient({ walletId: "wal_1" });
+    await client.wallet("wal_1").update({ name: "New" });
+    expect(captured().method).toBe("PATCH");
+    expect(captured().url).toContain("/v1/wallets/wal_1");
+    expect(captured().body).toEqual({ name: "New" });
+  });
+
+  it("works with 'current' as walletId", async () => {
+    const { client, captured } = createClient({ walletId: "wal_1" });
+    await client.wallet("current").get();
+    expect(captured().url).toContain("/v1/wallets/current");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Wallet Key
+// ---------------------------------------------------------------------------
+
+describe("wallet key", () => {
+  it("create posts to /v1/wallets/{id}/key", async () => {
+    const { client, captured } = createClient({ key: "wk_new", hint: "wk_ne..." });
+    await client.wallet("wal_1").key.create();
+    expect(captured().method).toBe("POST");
+    expect(captured().url).toContain("/v1/wallets/wal_1/key");
+  });
+
+  it("get fetches /v1/wallets/{id}/key", async () => {
+    const { client, captured } = createClient({ hint: "wk_ne...", createdAt: "2024-01-01", lastUsedAt: null });
+    await client.wallet("wal_1").key.get();
+    expect(captured().method).toBe("GET");
+    expect(captured().url).toContain("/v1/wallets/wal_1/key");
+  });
+
+  it("delete sends DELETE to /v1/wallets/{id}/key", async () => {
+    const { client, captured } = createClient(null, 204);
+    await client.wallet("wal_1").key.delete();
+    expect(captured().method).toBe("DELETE");
+    expect(captured().url).toContain("/v1/wallets/wal_1/key");
+  });
+
+  it("rotate posts to /v1/wallets/{id}/key/rotate", async () => {
+    const { client, captured } = createClient({ key: "wk_rotated", hint: "wk_ro..." });
+    await client.wallet("wal_1").key.rotate();
+    expect(captured().method).toBe("POST");
+    expect(captured().url).toContain("/v1/wallets/wal_1/key/rotate");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Keys (user-level)
 // ---------------------------------------------------------------------------
 
 describe("keys", () => {
@@ -56,51 +102,57 @@ describe("keys", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Invoices
+// Invoices (wallet-scoped)
 // ---------------------------------------------------------------------------
 
 describe("invoices", () => {
-  it("create posts to /v1/invoices", async () => {
+  it("create posts to /v1/wallets/{id}/invoices", async () => {
     const { client, captured } = createClient({ number: 1, status: "pending", amount: 100 });
-    await client.invoices.create({ amount: 100, memo: "test" });
+    await client.wallet("wal_1").invoices.create({ amount: 100, memo: "test" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/invoices");
+    expect(captured().url).toContain("/v1/wallets/wal_1/invoices");
     expect(captured().body).toEqual({ amount: 100, memo: "test" });
   });
 
-  it("list gets /v1/invoices", async () => {
+  it("list gets /v1/wallets/{id}/invoices", async () => {
     const { client, captured } = createClient([]);
-    await client.invoices.list();
+    await client.wallet("wal_1").invoices.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/invoices");
+    expect(captured().url).toContain("/v1/wallets/wal_1/invoices");
   });
 
   it("list passes query params", async () => {
     const { client, captured } = createClient([]);
-    await client.invoices.list({ limit: 10, after: 5 });
+    await client.wallet("wal_1").invoices.list({ limit: 10, after: 5 });
     expect(captured().url).toContain("limit=10");
     expect(captured().url).toContain("after=5");
   });
 
   it("list omits null query params", async () => {
     const { client, captured } = createClient([]);
-    await client.invoices.list({ limit: 10 });
+    await client.wallet("wal_1").invoices.list({ limit: 10 });
     expect(captured().url).toContain("limit=10");
     expect(captured().url).not.toContain("after");
   });
 
   it("get fetches by number", async () => {
     const { client, captured } = createClient({ number: 42 });
-    await client.invoices.get(42);
-    expect(captured().url).toContain("/v1/invoices/42");
+    await client.wallet("wal_1").invoices.get(42);
+    expect(captured().url).toContain("/v1/wallets/wal_1/invoices/42");
   });
 
   it("get fetches by payment hash", async () => {
     const { client, captured } = createClient({ number: 1 });
-    await client.invoices.get("abc123");
-    expect(captured().url).toContain("/v1/invoices/abc123");
+    await client.wallet("wal_1").invoices.get("abc123");
+    expect(captured().url).toContain("/v1/wallets/wal_1/invoices/abc123");
   });
+});
 
+// ---------------------------------------------------------------------------
+// Public invoices (top-level, no auth)
+// ---------------------------------------------------------------------------
+
+describe("public invoices", () => {
   it("createForWallet posts to /v1/invoices/for-wallet", async () => {
     const { client, captured } = createClient({ bolt11: "lnbc1..." });
     await client.invoices.createForWallet({ walletId: "wal_1", amount: 50 });
@@ -123,38 +175,46 @@ describe("invoices", () => {
 // ---------------------------------------------------------------------------
 
 describe("payments", () => {
-  it("create posts to /v1/payments", async () => {
+  it("create posts to /v1/wallets/{id}/payments", async () => {
     const { client, captured } = createClient({ number: 1, status: "settled" });
-    await client.payments.create({ target: "user@ln.bot", amount: 100 });
+    await client.wallet("wal_1").payments.create({ target: "user@ln.bot", amount: 100 });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/payments");
+    expect(captured().url).toContain("/v1/wallets/wal_1/payments");
     expect(captured().body).toEqual({ target: "user@ln.bot", amount: 100 });
   });
 
-  it("list gets /v1/payments", async () => {
+  it("list gets /v1/wallets/{id}/payments", async () => {
     const { client, captured } = createClient([]);
-    await client.payments.list();
+    await client.wallet("wal_1").payments.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/payments");
+    expect(captured().url).toContain("/v1/wallets/wal_1/payments");
   });
 
   it("list passes query params", async () => {
     const { client, captured } = createClient([]);
-    await client.payments.list({ limit: 5, after: 10 });
+    await client.wallet("wal_1").payments.list({ limit: 5, after: 10 });
     expect(captured().url).toContain("limit=5");
     expect(captured().url).toContain("after=10");
   });
 
   it("get fetches by number", async () => {
     const { client, captured } = createClient({ number: 7 });
-    await client.payments.get(7);
-    expect(captured().url).toContain("/v1/payments/7");
+    await client.wallet("wal_1").payments.get(7);
+    expect(captured().url).toContain("/v1/wallets/wal_1/payments/7");
   });
 
   it("get fetches by payment hash", async () => {
     const { client, captured } = createClient({ number: 1 });
-    await client.payments.get("hash123");
-    expect(captured().url).toContain("/v1/payments/hash123");
+    await client.wallet("wal_1").payments.get("hash123");
+    expect(captured().url).toContain("/v1/wallets/wal_1/payments/hash123");
+  });
+
+  it("resolve gets /v1/wallets/{id}/payments/resolve", async () => {
+    const { client, captured } = createClient({ type: "lightning_address", min: 1, max: 1000000, fixed: false, amount: null });
+    await client.wallet("wal_1").payments.resolve({ target: "user@ln.bot" });
+    expect(captured().method).toBe("GET");
+    expect(captured().url).toContain("/v1/wallets/wal_1/payments/resolve");
+    expect(captured().url).toContain("target=user%40ln.bot");
   });
 });
 
@@ -163,38 +223,38 @@ describe("payments", () => {
 // ---------------------------------------------------------------------------
 
 describe("addresses", () => {
-  it("create posts to /v1/addresses", async () => {
+  it("create posts to /v1/wallets/{id}/addresses", async () => {
     const { client, captured } = createClient({ address: "random@ln.bot", generated: true, cost: 0 });
-    await client.addresses.create();
+    await client.wallet("wal_1").addresses.create();
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/addresses");
+    expect(captured().url).toContain("/v1/wallets/wal_1/addresses");
   });
 
   it("create with vanity address", async () => {
     const { client, captured } = createClient({ address: "vanity@ln.bot", generated: false, cost: 100 });
-    await client.addresses.create({ address: "vanity" });
+    await client.wallet("wal_1").addresses.create({ address: "vanity" });
     expect(captured().body).toEqual({ address: "vanity" });
   });
 
-  it("list gets /v1/addresses", async () => {
+  it("list gets /v1/wallets/{id}/addresses", async () => {
     const { client, captured } = createClient([]);
-    await client.addresses.list();
+    await client.wallet("wal_1").addresses.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/addresses");
+    expect(captured().url).toContain("/v1/wallets/wal_1/addresses");
   });
 
-  it("delete sends DELETE to /v1/addresses/{address}", async () => {
+  it("delete sends DELETE to /v1/wallets/{id}/addresses/{address}", async () => {
     const { client, captured } = createClient(null, 204);
-    await client.addresses.delete("test@ln.bot");
+    await client.wallet("wal_1").addresses.delete("test@ln.bot");
     expect(captured().method).toBe("DELETE");
-    expect(captured().url).toContain("/v1/addresses/test%40ln.bot");
+    expect(captured().url).toContain("/v1/wallets/wal_1/addresses/test%40ln.bot");
   });
 
-  it("transfer posts to /v1/addresses/{address}/transfer", async () => {
+  it("transfer posts to /v1/wallets/{id}/addresses/{address}/transfer", async () => {
     const { client, captured } = createClient({ address: "test@ln.bot", transferredTo: "wal_2" });
-    await client.addresses.transfer("test@ln.bot", { targetWalletKey: "key_target" });
+    await client.wallet("wal_1").addresses.transfer("test@ln.bot", { targetWalletKey: "key_target" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/addresses/test%40ln.bot/transfer");
+    expect(captured().url).toContain("/v1/wallets/wal_1/addresses/test%40ln.bot/transfer");
     expect(captured().body).toEqual({ targetWalletKey: "key_target" });
   });
 });
@@ -204,16 +264,16 @@ describe("addresses", () => {
 // ---------------------------------------------------------------------------
 
 describe("transactions", () => {
-  it("list gets /v1/transactions", async () => {
+  it("list gets /v1/wallets/{id}/transactions", async () => {
     const { client, captured } = createClient([]);
-    await client.transactions.list();
+    await client.wallet("wal_1").transactions.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/transactions");
+    expect(captured().url).toContain("/v1/wallets/wal_1/transactions");
   });
 
   it("list passes query params", async () => {
     const { client, captured } = createClient([]);
-    await client.transactions.list({ limit: 20, after: 3 });
+    await client.wallet("wal_1").transactions.list({ limit: 20, after: 3 });
     expect(captured().url).toContain("limit=20");
     expect(captured().url).toContain("after=3");
   });
@@ -224,26 +284,26 @@ describe("transactions", () => {
 // ---------------------------------------------------------------------------
 
 describe("webhooks", () => {
-  it("create posts to /v1/webhooks", async () => {
+  it("create posts to /v1/wallets/{id}/webhooks", async () => {
     const { client, captured } = createClient({ id: "wh_1", url: "https://example.com/hook", secret: "sec" });
-    await client.webhooks.create({ url: "https://example.com/hook" });
+    await client.wallet("wal_1").webhooks.create({ url: "https://example.com/hook" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/webhooks");
+    expect(captured().url).toContain("/v1/wallets/wal_1/webhooks");
     expect(captured().body).toEqual({ url: "https://example.com/hook" });
   });
 
-  it("list gets /v1/webhooks", async () => {
+  it("list gets /v1/wallets/{id}/webhooks", async () => {
     const { client, captured } = createClient([]);
-    await client.webhooks.list();
+    await client.wallet("wal_1").webhooks.list();
     expect(captured().method).toBe("GET");
-    expect(captured().url).toContain("/v1/webhooks");
+    expect(captured().url).toContain("/v1/wallets/wal_1/webhooks");
   });
 
-  it("delete sends DELETE to /v1/webhooks/{id}", async () => {
+  it("delete sends DELETE to /v1/wallets/{id}/webhooks/{id}", async () => {
     const { client, captured } = createClient(null, 204);
-    await client.webhooks.delete("wh_123");
+    await client.wallet("wal_1").webhooks.delete("wh_123");
     expect(captured().method).toBe("DELETE");
-    expect(captured().url).toContain("/v1/webhooks/wh_123");
+    expect(captured().url).toContain("/v1/wallets/wal_1/webhooks/wh_123");
   });
 });
 
@@ -310,27 +370,27 @@ describe("restore", () => {
 // ---------------------------------------------------------------------------
 
 describe("l402", () => {
-  it("createChallenge posts to /v1/l402/challenges", async () => {
+  it("createChallenge posts to /v1/wallets/{id}/l402/challenges", async () => {
     const { client, captured } = createClient({ macaroon: "mac", invoice: "lnbc1...", paymentHash: "h", expiresAt: "2099-01-01", wwwAuthenticate: "L402 ..." });
-    await client.l402.createChallenge({ amount: 10, description: "test" });
+    await client.wallet("wal_1").l402.createChallenge({ amount: 10, description: "test" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/l402/challenges");
+    expect(captured().url).toContain("/v1/wallets/wal_1/l402/challenges");
     expect(captured().body).toEqual({ amount: 10, description: "test" });
   });
 
-  it("verify posts to /v1/l402/verify", async () => {
+  it("verify posts to /v1/wallets/{id}/l402/verify", async () => {
     const { client, captured } = createClient({ valid: true, paymentHash: "h", caveats: null, error: null });
-    await client.l402.verify({ authorization: "L402 mac:pre" });
+    await client.wallet("wal_1").l402.verify({ authorization: "L402 mac:pre" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/l402/verify");
+    expect(captured().url).toContain("/v1/wallets/wal_1/l402/verify");
     expect(captured().body).toEqual({ authorization: "L402 mac:pre" });
   });
 
-  it("pay posts to /v1/l402/pay", async () => {
+  it("pay posts to /v1/wallets/{id}/l402/pay", async () => {
     const { client, captured } = createClient({ authorization: "L402 mac:pre", paymentHash: "h", preimage: "pre", amount: 10, fee: 0, paymentNumber: 1, status: "settled" });
-    await client.l402.pay({ wwwAuthenticate: "L402 macaroon=\"mac\", invoice=\"inv\"" });
+    await client.wallet("wal_1").l402.pay({ wwwAuthenticate: "L402 macaroon=\"mac\", invoice=\"inv\"" });
     expect(captured().method).toBe("POST");
-    expect(captured().url).toContain("/v1/l402/pay");
+    expect(captured().url).toContain("/v1/wallets/wal_1/l402/pay");
     expect(captured().body).toEqual({ wwwAuthenticate: "L402 macaroon=\"mac\", invoice=\"inv\"" });
   });
 });

@@ -9,6 +9,21 @@ export type PaymentStatus = "pending" | "processing" | "settled" | "failed";
 export type TransactionType = "credit" | "debit";
 
 // ---------------------------------------------------------------------------
+// Account
+// ---------------------------------------------------------------------------
+
+export interface RegisterResponse {
+  userId: string;
+  primaryKey: string;
+  secondaryKey: string;
+  recoveryPassphrase: string;
+}
+
+export interface MeResponse {
+  walletId: string;
+}
+
+// ---------------------------------------------------------------------------
 // Wallet
 // ---------------------------------------------------------------------------
 
@@ -23,25 +38,39 @@ export interface WalletResponse {
   available: number;
 }
 
-export interface CreateWalletRequest {
-  name?: string | null;
+export interface WalletListItem {
+  walletId: string;
+  name: string;
+  createdAt: string | null;
+}
+
+export interface CreateWalletResponse {
+  walletId: string;
+  name: string;
+  address: string;
 }
 
 export interface UpdateWalletRequest {
   name: string;
 }
 
-export interface CreateWalletResponse {
-  walletId: string;
-  primaryKey: string;
-  secondaryKey: string;
-  name: string;
-  address: string;
-  recoveryPassphrase: string;
+// ---------------------------------------------------------------------------
+// Wallet Keys
+// ---------------------------------------------------------------------------
+
+export interface WalletKeyResponse {
+  key: string;
+  hint: string;
+}
+
+export interface WalletKeyInfoResponse {
+  hint: string;
+  createdAt: string | null;
+  lastUsedAt: string | null;
 }
 
 // ---------------------------------------------------------------------------
-// API Keys
+// API Keys (user-level)
 // ---------------------------------------------------------------------------
 
 export interface RotateApiKeyResponse {
@@ -145,6 +174,18 @@ export interface PaymentResponse {
 export interface ListPaymentsParams {
   limit?: number;
   after?: number;
+}
+
+export interface ResolveTargetParams {
+  target: string;
+}
+
+export interface ResolveTargetResponse {
+  type: "lightning_address" | "lnurl" | "bolt11";
+  min: number | null;
+  max: number | null;
+  fixed: boolean;
+  amount: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -447,7 +488,7 @@ export interface WalletEvent {
 export interface LnBotConfig {
   /** Base URL of the LnBot API (defaults to "https://api.ln.bot") */
   baseUrl?: string;
-  /** API key for authentication (not required for wallet creation or restore) */
+  /** API key for authentication (not required for registration or restore) */
   apiKey?: string;
   /** Custom fetch implementation (defaults to globalThis.fetch) */
   fetch?: typeof globalThis.fetch;
