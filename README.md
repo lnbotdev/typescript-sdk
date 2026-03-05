@@ -13,9 +13,10 @@ Give your AI agents, apps, and services access to Bitcoin over the Lightning Net
 ```typescript
 import { LnBot } from "@lnbot/sdk";
 
-const ln = new LnBot({ apiKey: "key_..." });
+const client = new LnBot({ apiKey: "uk_..." });
+const wallet = client.wallet("wal_...");
 
-await ln.payments.create({ target: "alice@ln.bot", amount: 1000 });
+await wallet.payments.create({ target: "alice@ln.bot", amount: 1000 });
 ```
 
 > ln.bot also ships a **[Python SDK](https://pypi.org/project/lnbot/)**, **[Go SDK](https://pkg.go.dev/github.com/lnbotdev/go-sdk)**, **[Rust SDK](https://crates.io/crates/lnbot)**, **[CLI](https://ln.bot/docs)**, and **[MCP server](https://ln.bot/docs)**.
@@ -37,7 +38,7 @@ await ln.payments.create({ target: "alice@ln.bot", amount: 1000 });
 - **Fully typed** — every request, response, and error has TypeScript types
 - **Tiny** — under 10 KB minified + gzipped
 - **Dual format** — ESM + CJS with source maps and `.d.ts` declarations
-- **Idiomatic** — resource-based API (`ln.invoices.create()`, not `createInvoice()`)
+- **Wallet-scoped** — `client.wallet("wal_...").invoices.create()` — clean, explicit, no ambiguity
 
 ---
 
@@ -59,27 +60,33 @@ yarn add @lnbot/sdk
 
 ## Quick start
 
-### 1. Create a wallet
-
-No API key needed — create a wallet and get your keys:
+### 1. Register and create a wallet
 
 ```typescript
 import { LnBot } from "@lnbot/sdk";
 
-const ln = new LnBot();
-const wallet = await ln.wallets.create({ name: "my-agent" });
+// Register a new account (no auth needed)
+const client = new LnBot();
+const account = await client.register();
 
-console.log(wallet.primaryKey);         // your API key
-console.log(wallet.address);            // your Lightning address
-console.log(wallet.recoveryPassphrase); // back this up!
+console.log(account.primaryKey);         // user key (uk_...)
+console.log(account.recoveryPassphrase); // back this up!
+
+// Create a wallet using your user key
+const authed = new LnBot({ apiKey: account.primaryKey });
+const wallet = await authed.wallets.create();
+
+console.log(wallet.walletId); // wal_...
+console.log(wallet.address);  // your Lightning address
 ```
 
 ### 2. Receive sats
 
 ```typescript
-const ln = new LnBot({ apiKey: wallet.primaryKey });
+const client = new LnBot({ apiKey: "uk_..." });
+const w = client.wallet("wal_...");
 
-const invoice = await ln.invoices.create({
+const invoice = await w.invoices.create({
   amount: 1000,
   memo: "Payment for task #42",
 });
@@ -87,12 +94,17 @@ const invoice = await ln.invoices.create({
 console.log(invoice.bolt11); // share with the payer
 ```
 
-### 3. Wait for payment
+### 3. Wait for payment (SSE)
 
 ```typescript
-for await (const event of ln.invoices.watch(invoice.number)) {
+// SSE requires a wallet key (wk_...)
+const wkClient = new LnBot({ apiKey: "wk_..." });
+const w = wkClient.wallet("wal_...");
+
+for await (const event of w.invoices.watch(invoice.number)) {
   if (event.event === "settled") {
-    console.log("Paid!");
+    console.log("Paid!", event.data.preimage);
+    break;
   }
 }
 ```
@@ -100,40 +112,79 @@ for await (const event of ln.invoices.watch(invoice.number)) {
 ### 4. Send sats
 
 ```typescript
+const w = client.wallet("wal_...");
+
 // To a Lightning address
-await ln.payments.create({
-  target: "alice@ln.bot",
-  amount: 500,
-});
+await w.payments.create({ target: "alice@ln.bot", amount: 500 });
 
 // To a BOLT11 invoice
-await ln.payments.create({
-  target: "lnbc10u1p...",
-});
+await w.payments.create({ target: "lnbc10u1p..." });
 ```
 
 ### 5. Check balance
 
 ```typescript
-const wallet = await ln.wallets.current();
-console.log(`${wallet.available} sats available`);
+const info = await client.wallet("wal_...").get();
+console.log(`${info.available} sats available`);
+```
+
+---
+
+## Authentication
+
+ln.bot uses two key types:
+
+- **User key** (`uk_...`) — manages all wallets under your account. Use for creating wallets, listing wallets, rotating user keys.
+- **Wallet key** (`wk_...`) — scoped to a single wallet. Use for SSE streams, or to give a service access to one wallet only.
+
+```typescript
+// User key — full account access
+const client = new LnBot({ apiKey: "uk_..." });
+const w1 = client.wallet("wal_abc");
+const w2 = client.wallet("wal_xyz");
+
+// Wallet key — single wallet
+const wkClient = new LnBot({ apiKey: "wk_..." });
+const w = wkClient.wallet("current"); // "current" resolves to the key's wallet
+```
+
+### Wallet keys
+
+```typescript
+const w = client.wallet("wal_...");
+
+// Create (one key per wallet)
+const key = await w.key.create();
+console.log(key.key); // wk_... — shown once
+
+// Get metadata
+const info = await w.key.get();
+
+// Rotate (old key invalidated immediately)
+const rotated = await w.key.rotate();
+
+// Delete
+await w.key.delete();
 ```
 
 ---
 
 ## Addresses
 
-Every wallet gets a Lightning address. Create more or claim vanity addresses:
+Every wallet gets a Lightning address on creation. Create more or claim vanity addresses:
 
 ```typescript
-const random = await ln.addresses.create();
-const vanity = await ln.addresses.create({ address: "myagent" });
-const all    = await ln.addresses.list();
+const w = client.wallet("wal_...");
 
-await ln.addresses.delete("myagent");
+const random = await w.addresses.create();
+const vanity = await w.addresses.create({ address: "myagent" });
+const all    = await w.addresses.list();
 
-await ln.addresses.transfer("myagent", {
-  targetWalletKey: "other-wallet-api-key",
+await w.addresses.delete("myagent@ln.bot");
+
+// Transfer a vanity address to another wallet
+await w.addresses.transfer("myagent@ln.bot", {
+  targetWalletKey: "wk_other_wallet_key",
 });
 ```
 
@@ -142,10 +193,10 @@ await ln.addresses.transfer("myagent", {
 Full history of credits and debits:
 
 ```typescript
-const txs = await ln.transactions.list({ limit: 20 });
+const txs = await client.wallet("wal_...").transactions.list({ limit: 20 });
 
 for (const tx of txs) {
-  console.log(`${tx.type} ${tx.amount} sats — ${tx.note}`);
+  console.log(`${tx.type} ${tx.amount} sats — balance: ${tx.balanceAfter}`);
 }
 ```
 
@@ -154,21 +205,39 @@ for (const tx of txs) {
 Get notified when invoices are paid:
 
 ```typescript
-const hook = await ln.webhooks.create({
+const w = client.wallet("wal_...");
+
+const hook = await w.webhooks.create({
   url: "https://example.com/webhooks/lnbot",
 });
 // hook.secret — save this for signature verification. Only returned once.
 
-const hooks = await ln.webhooks.list();
-await ln.webhooks.delete(hook.id);
+const hooks = await w.webhooks.list();
+await w.webhooks.delete(hook.id);
 ```
 
-## API keys
+## Public invoices (no auth)
 
-Each wallet has a primary and secondary key for zero-downtime rotation:
+Create invoices for any wallet or address without authentication:
 
 ```typescript
-const rotated = await ln.keys.rotate(0); // 0 = primary, 1 = secondary
+const client = new LnBot(); // no API key needed
+
+const inv = await client.invoices.createForWallet({
+  walletId: "wal_...",
+  amount: 100,
+});
+
+const inv2 = await client.invoices.createForAddress({
+  address: "alice@ln.bot",
+  amount: 100,
+});
+```
+
+## User keys
+
+```typescript
+const rotated = await client.keys.rotate(0); // 0 = primary, 1 = secondary
 // rotated.key — new plaintext key, shown once
 ```
 
@@ -177,10 +246,10 @@ const rotated = await ln.keys.rotate(0); // 0 = primary, 1 = secondary
 ### Recovery passphrase
 
 ```typescript
-const backup = await ln.backup.recovery();
-// backup.passphrase — 12-word BIP-39, show once
+const backup = await client.backup.recovery();
+// backup.passphrase — 12-word BIP-39, shown once
 
-const restored = await ln.restore.recovery({
+const restored = await client.restore.recovery({
   passphrase: "word1 word2 ... word12",
 });
 // restored.primaryKey, restored.secondaryKey — fresh keys
@@ -189,10 +258,10 @@ const restored = await ln.restore.recovery({
 ### Passkey (WebAuthn)
 
 ```typescript
-const begin = await ln.backup.passkeyBegin();
+const begin = await client.backup.passkeyBegin();
 // pass begin.options to navigator.credentials.create()
 
-await ln.backup.passkeyComplete({
+await client.backup.passkeyComplete({
   sessionId: begin.sessionId,
   attestation: credential,
 });
@@ -205,34 +274,74 @@ await ln.backup.passkeyComplete({
 Monetize APIs with Lightning-native authentication:
 
 ```typescript
+const w = client.wallet("wal_...");
+
 // Create a challenge (server side)
-const challenge = await ln.l402.createChallenge({
+const challenge = await w.l402.createChallenge({
   amount: 100,
   description: "API access",
   expirySeconds: 3600,
 });
 
 // Pay the challenge (client side)
-const result = await ln.l402.pay({ wwwAuthenticate: challenge.wwwAuthenticate });
+const other = otherClient.wallet("wal_...");
+const result = await other.l402.pay({
+  wwwAuthenticate: challenge.wwwAuthenticate,
+});
 
 // Verify a token (server side, stateless)
-const { valid } = await ln.l402.verify({ authorization: result.authorization! });
+const { valid } = await w.l402.verify({
+  authorization: result.authorization!,
+});
 ```
+
+## SSE event streams
+
+### Watch a single invoice
+
+```typescript
+for await (const event of w.invoices.watch(invoiceNumber, 120)) {
+  // event.event: "pending" | "settled" | "expired"
+  // event.data: InvoiceResponse
+}
+```
+
+### Watch a single payment
+
+```typescript
+for await (const event of w.payments.watch(paymentNumber, 60)) {
+  // event.event: "processing" | "settled" | "failed"
+  // event.data: PaymentResponse
+}
+```
+
+### Stream all wallet events
+
+```typescript
+const controller = new AbortController();
+
+for await (const event of w.events.stream(controller.signal)) {
+  // event.event: "invoice.created" | "invoice.settled" | "payment.created" | ...
+  console.log(event.event, event.data);
+}
+```
+
+> SSE streams require wallet key (`wk_...`) authentication.
 
 ## Pagination
 
 All list endpoints support cursor-based pagination:
 
 ```typescript
-const page1 = await ln.invoices.list({ limit: 10 });
+const page1 = await w.invoices.list({ limit: 10 });
 
-const page2 = await ln.invoices.list({
+const page2 = await w.invoices.list({
   limit: 10,
   after: page1[page1.length - 1].number,
 });
 ```
 
-Works the same for `ln.payments.list()` and `ln.transactions.list()`.
+Works the same for `w.payments.list()` and `w.transactions.list()`.
 
 ## Error handling
 
@@ -242,15 +351,21 @@ All API errors throw typed exceptions:
 import {
   LnBotError,
   BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
   NotFoundError,
   ConflictError,
 } from "@lnbot/sdk";
 
 try {
-  await ln.payments.create({ target: "invalid", amount: 100 });
+  await w.payments.create({ target: "invalid", amount: 100 });
 } catch (err) {
   if (err instanceof BadRequestError) {
     // 400 — validation failed
+  } else if (err instanceof UnauthorizedError) {
+    // 401 — invalid or missing API key
+  } else if (err instanceof ForbiddenError) {
+    // 403 — key doesn't have access
   } else if (err instanceof NotFoundError) {
     // 404 — resource not found
   } else if (err instanceof ConflictError) {
@@ -267,10 +382,10 @@ try {
 ```typescript
 import { LnBot } from "@lnbot/sdk";
 
-const ln = new LnBot({
-  apiKey: "key_...",              // optional — not needed for wallet creation or restore
-  baseUrl: "https://api.ln.bot",   // optional — this is the default
-  fetch: customFetch,              // optional — bring your own fetch for testing or proxies
+const client = new LnBot({
+  apiKey: "uk_...",                  // optional — not needed for register or public invoices
+  baseUrl: "https://api.ln.bot",     // optional — this is the default
+  fetch: customFetch,                // optional — bring your own fetch for testing or proxies
 });
 ```
 
@@ -278,75 +393,92 @@ const ln = new LnBot({
 
 ## API reference
 
-### Wallets
+### Top-level
 
 | Method | Description |
 | --- | --- |
-| `ln.wallets.create(req?)` | Create a new wallet (no auth required) |
-| `ln.wallets.current()` | Get current wallet info and balance |
-| `ln.wallets.update(req)` | Update wallet name |
+| `client.register()` | Create a new account (no auth) |
+| `client.me()` | Get current identity |
+| `client.wallet(id)` | Get a wallet handle for scoped operations |
+| `client.wallets.create()` | Create a new wallet (user key) |
+| `client.wallets.list()` | List all wallets (user key) |
+| `client.keys.rotate(slot)` | Rotate user key (0 = primary, 1 = secondary) |
+| `client.invoices.createForWallet(req)` | Create invoice by wallet ID (no auth) |
+| `client.invoices.createForAddress(req)` | Create invoice by Lightning address (no auth) |
+| `client.backup.recovery()` | Generate 12-word recovery passphrase |
+| `client.restore.recovery(req)` | Restore with recovery passphrase |
 
-### Invoices
-
-| Method | Description |
-| --- | --- |
-| `ln.invoices.create(req)` | Create a BOLT11 invoice to receive sats |
-| `ln.invoices.list(params?)` | List invoices |
-| `ln.invoices.get(number)` | Get invoice by number |
-| `ln.invoices.watch(number, timeout?, signal?)` | SSE stream — yields when invoice settles or expires |
-
-### Payments
+### Wallet-scoped (`client.wallet("wal_...")`)
 
 | Method | Description |
 | --- | --- |
-| `ln.payments.create(req)` | Send sats to a Lightning address or BOLT11 invoice |
-| `ln.payments.list(params?)` | List payments |
-| `ln.payments.get(number)` | Get payment by number |
+| `w.get()` | Get wallet info and balance |
+| `w.update(req)` | Update wallet name |
 
-### Addresses
-
-| Method | Description |
-| --- | --- |
-| `ln.addresses.create(req?)` | Create a random or vanity Lightning address |
-| `ln.addresses.list()` | List all addresses |
-| `ln.addresses.delete(address)` | Delete an address |
-| `ln.addresses.transfer(address, req)` | Transfer address to another wallet |
-
-### Transactions
+### Wallet key (`w.key`)
 
 | Method | Description |
 | --- | --- |
-| `ln.transactions.list(params?)` | List credit and debit transactions |
+| `w.key.create()` | Create wallet key (max 1 per wallet) |
+| `w.key.get()` | Get key metadata |
+| `w.key.rotate()` | Rotate key (old key invalidated) |
+| `w.key.delete()` | Delete/revoke key |
 
-### Webhooks
-
-| Method | Description |
-| --- | --- |
-| `ln.webhooks.create(req)` | Register a webhook endpoint (max 10) |
-| `ln.webhooks.list()` | List all webhooks |
-| `ln.webhooks.delete(id)` | Delete a webhook |
-
-### API Keys
+### Invoices (`w.invoices`)
 
 | Method | Description |
 | --- | --- |
-| `ln.keys.rotate(slot)` | Rotate a key (0 = primary, 1 = secondary) |
+| `w.invoices.create(req)` | Create a BOLT11 invoice |
+| `w.invoices.list(params?)` | List invoices |
+| `w.invoices.get(numberOrHash)` | Get invoice by number or payment hash |
+| `w.invoices.watch(numberOrHash, timeout?)` | SSE stream for invoice status |
 
-### Backup
-
-| Method | Description |
-| --- | --- |
-| `ln.backup.recovery()` | Generate 12-word BIP-39 recovery passphrase |
-| `ln.backup.passkeyBegin()` | Start passkey backup (WebAuthn) |
-| `ln.backup.passkeyComplete(req)` | Complete passkey backup |
-
-### Restore
+### Payments (`w.payments`)
 
 | Method | Description |
 | --- | --- |
-| `ln.restore.recovery(req)` | Restore wallet with recovery passphrase |
-| `ln.restore.passkeyBegin()` | Start passkey restore (WebAuthn) |
-| `ln.restore.passkeyComplete(req)` | Complete passkey restore |
+| `w.payments.create(req)` | Send sats to address or invoice |
+| `w.payments.list(params?)` | List payments |
+| `w.payments.get(numberOrHash)` | Get payment by number or hash |
+| `w.payments.resolve(params)` | Inspect a target without sending |
+| `w.payments.watch(numberOrHash, timeout?)` | SSE stream for payment status |
+
+### Addresses (`w.addresses`)
+
+| Method | Description |
+| --- | --- |
+| `w.addresses.create(req?)` | Create random or vanity address |
+| `w.addresses.list()` | List all addresses |
+| `w.addresses.delete(address)` | Delete an address |
+| `w.addresses.transfer(address, req)` | Transfer vanity address to another wallet |
+
+### Transactions (`w.transactions`)
+
+| Method | Description |
+| --- | --- |
+| `w.transactions.list(params?)` | List credit and debit transactions |
+
+### Webhooks (`w.webhooks`)
+
+| Method | Description |
+| --- | --- |
+| `w.webhooks.create(req)` | Register a webhook endpoint (max 10) |
+| `w.webhooks.list()` | List all webhooks |
+| `w.webhooks.delete(id)` | Delete a webhook |
+
+### L402 (`w.l402`)
+
+| Method | Description |
+| --- | --- |
+| `w.l402.createChallenge(req)` | Create L402 challenge (invoice + macaroon) |
+| `w.l402.verify(req)` | Verify L402 authorization token |
+| `w.l402.pay(req)` | Pay L402 challenge, get authorization header |
+
+### Events (`w.events`)
+
+| Method | Description |
+| --- | --- |
+| `w.events.stream(signal?)` | SSE stream of all wallet events |
 
 ---
 
