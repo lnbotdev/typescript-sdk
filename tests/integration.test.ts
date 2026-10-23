@@ -358,6 +358,17 @@ if (!USER_KEY || !WALLET_ID) {
         expect(typeof resolved.min).toBe("number");
         expect(typeof resolved.max).toBe("number");
         expect(typeof resolved.fixed).toBe("boolean");
+        expect(resolved.internal).toBe(true);
+      });
+
+      it("payments.resolve() prices an internal transfer at zero", async () => {
+        const resolved = await w1.payments.resolve({ target: w2Address.address, amount: 2 });
+        expect(resolved.amount).toBe(2);
+        expect(resolved.internal).toBe(true);
+        expect(resolved.networkFeeEstimate).toBe(0);
+        expect(resolved.serviceFee).toBe(0);
+        expect(resolved.total).toBe(2);
+        expect(resolved.feeWarning).toBeNull();
       });
 
       it("payments.resolve() bolt11 invoice", async () => {
@@ -365,6 +376,7 @@ if (!USER_KEY || !WALLET_ID) {
         expect(resolved.type).toBe("bolt11");
         expect(resolved.amount).toBe(2);
         expect(resolved.fixed).toBe(true);
+        expect(typeof resolved.total).toBe("number");
       });
 
       it("record balances before payment", async () => {
@@ -573,7 +585,6 @@ if (!USER_KEY || !WALLET_ID) {
         const w2 = client.wallet(w2Info.walletId);
         const payResult = await w2.l402.pay({
           wwwAuthenticate: challenge.wwwAuthenticate,
-          maxFee: 1,
           wait: true,
           timeout: 30,
         });

@@ -130,6 +130,42 @@ console.log(`${info.available} sats available`);
 
 ---
 
+## Fees
+
+Payments between ln.bot wallets are free. A payment out to Lightning pays a service fee (0.25%, minimum 1 sat) and the network fee (Spark's 0.25% plus Lightning routing). Leave `maxFee` out: the server caps the network fee at 1% of the amount (minimum 20 sats) and holds only the estimate plus a small buffer while the payment is in flight. On success the wallet is debited `amount + actualFee + serviceFee`.
+
+### Price a payment before sending
+
+```typescript
+const quote = await w.payments.resolve({ target: "alice@example.com", amount: 250000 });
+
+console.log(quote.internal);           // true for an ln.bot wallet: no fees
+console.log(quote.networkFeeEstimate); // 700
+console.log(quote.serviceFee);         // 625
+console.log(quote.total);              // 251325
+
+if (quote.feeWarning) {
+  // Sending without maxFee would be rejected: the fee is unusually high
+  console.warn(quote.feeWarning);
+}
+```
+
+A BOLT11 invoice carries its amount, so `resolve({ target: "lnbc..." })` prices it as is. Pricing a Lightning address or LNURL fetches an invoice from the recipient, so call it once the amount is settled, not on every keystroke.
+
+### Send everything
+
+Resolve a Lightning address or LNURL without an amount to get `maxSendable`, the most the wallet can send there right now after fees, and pay exactly that:
+
+```typescript
+const { maxSendable } = await w.payments.resolve({ target: "alice@example.com" });
+
+if (maxSendable) {
+  await w.payments.create({ target: "alice@example.com", amount: maxSendable });
+}
+```
+
+---
+
 ## Authentication
 
 ln.bot uses two key types:
@@ -306,6 +342,8 @@ for await (const event of w.invoices.watch(invoiceNumber, 120)) {
 }
 ```
 
+An `expired` invoice is not always final: one paid just before it expired can still turn `settled`. Check it again with `w.invoices.get()`, or keep listening for `invoice.settled` on `w.events.stream()` or a webhook, before treating it as unpaid.
+
 ### Watch a single payment
 
 ```typescript
@@ -314,6 +352,8 @@ for await (const event of w.payments.watch(paymentNumber, 60)) {
   // event.data: PaymentResponse
 }
 ```
+
+A payment that can't be routed yet stays `pending` and is retried automatically. It fails with `failureReason` set to `Invoice expired before it could be paid.` if the invoice runs out first, and after 24 hours at most.
 
 ### Stream all wallet events
 
@@ -440,7 +480,7 @@ const client = new LnBot({
 | `w.payments.create(req)` | Send sats to address or invoice |
 | `w.payments.list(params?)` | List payments |
 | `w.payments.get(numberOrHash)` | Get payment by number or hash |
-| `w.payments.resolve(params)` | Inspect a target without sending |
+| `w.payments.resolve(params)` | Inspect and price a target without sending (`{ target, amount? }`) |
 | `w.payments.watch(numberOrHash, timeout?)` | SSE stream for payment status |
 
 ### Addresses (`w.addresses`)

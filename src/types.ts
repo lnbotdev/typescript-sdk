@@ -149,7 +149,11 @@ export interface CreatePaymentRequest {
   amount?: number | null;
   /** Idempotency key to safely retry without duplicate payments */
   idempotencyKey?: string | null;
-  /** Maximum routing fee in sats */
+  /**
+   * Maximum network fee in sats: Spark's 0.25% plus Lightning routing.
+   * Defaults to 1% of the amount, minimum 20 sats; accepts 1 to the larger of
+   * 10,000 and 5% of the amount. Leave it out unless you need a different cap.
+   */
   maxFee?: number | null;
   /** Caller-defined reference for tracking */
   reference?: string | null;
@@ -159,8 +163,11 @@ export interface PaymentResponse {
   number: number;
   status: PaymentStatus;
   amount: number;
+  /** Network fee reserved for this payment (the estimate plus a buffer); the unused part is released at settlement */
   maxFee: number;
+  /** Service fee: 0.25%, minimum 1 sat; 0 for transfers between ln.bot wallets */
   serviceFee: number;
+  /** Network fee actually charged (Spark's fee plus routing), or null until settled */
   actualFee: number | null;
   address: string;
   reference: string | null;
@@ -177,15 +184,40 @@ export interface ListPaymentsParams {
 }
 
 export interface ResolveTargetParams {
+  /** Lightning address (user@domain), LNURL, or BOLT11 invoice string */
   target: string;
+  /**
+   * Amount in sats to price the payment for. For a BOLT11 invoice it must
+   * equal the invoice amount. Leave it out for a Lightning address or LNURL
+   * to get `maxSendable` instead.
+   */
+  amount?: number | null;
 }
 
 export interface ResolveTargetResponse {
   type: "lightning_address" | "lnurl" | "bolt11";
+  /** Minimum accepted amount in sats, or null for a BOLT11 invoice */
   min: number | null;
+  /** Maximum accepted amount in sats, or null for a BOLT11 invoice */
   max: number | null;
+  /** True if the recipient expects a fixed amount */
   fixed: boolean;
+  /** The amount priced: the invoice amount for BOLT11, else the amount passed. Null without an amount. */
   amount: number | null;
+  /** True when the recipient is an ln.bot wallet: an internal transfer with no fees */
+  internal: boolean;
+  /** Estimated network fee in sats (Spark's 0.25% plus routing). Null without an amount or an estimate; 0 if internal. */
+  networkFeeEstimate: number | null;
+  /** Service fee in sats: 0.25%, minimum 1 sat; 0 if internal. Null without an amount. */
+  serviceFee: number | null;
+  /** Network fee that would be held with the default maxFee. Null without an amount, or when `feeWarning` is set. */
+  maxFee: number | null;
+  /** amount + networkFeeEstimate + serviceFee. Null without an amount. */
+  total: number | null;
+  /** Lightning address or LNURL resolved without an amount: the most this wallet can send there now, after fees (0 if it can't cover the recipient's minimum). Null otherwise. */
+  maxSendable: number | null;
+  /** Set when sending without maxFee would be rejected because the fee is unusually high */
+  feeWarning: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -423,7 +455,7 @@ export interface VerifyL402Response {
 export interface PayL402Request {
   /** WWW-Authenticate header value from an HTTP 402 response */
   wwwAuthenticate: string;
-  /** Maximum routing fee in sats */
+  /** Maximum network fee in sats (Spark's fee plus routing). Defaults to 1% of the amount, minimum 20 sats. */
   maxFee?: number | null;
   /** Reference string stored with the payment */
   reference?: string | null;
@@ -442,7 +474,7 @@ export interface L402PayResponse {
   preimage: string | null;
   /** Payment amount in sats */
   amount: number;
-  /** Actual routing fee in sats, or null if not yet settled */
+  /** Network fee charged in sats (Spark's fee plus routing), or null if not yet settled */
   fee: number | null;
   /** Payment number for status polling */
   paymentNumber: number;

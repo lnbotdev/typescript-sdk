@@ -321,7 +321,12 @@ export class PaymentsResource {
     return this._http.get(`${this._prefix}/payments/${encodeURIComponent(numberOrHash)}`);
   }
 
-  /** Inspects a payment target (Lightning address, LNURL, or BOLT11) without sending. */
+  /**
+   * Inspects and prices a payment target (Lightning address, LNURL, or BOLT11)
+   * without sending: its amount limits, the network and service fees, and the
+   * total. Pricing a Lightning address or LNURL fetches an invoice from the
+   * recipient, so call it once the amount is known.
+   */
   resolve(params: ResolveTargetParams): Promise<ResolveTargetResponse> {
     return this._http.get(`${this._prefix}/payments/resolve${qs({ ...params })}`);
   }

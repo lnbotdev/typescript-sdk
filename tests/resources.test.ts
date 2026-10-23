@@ -215,6 +215,31 @@ describe("payments", () => {
     expect(captured().method).toBe("GET");
     expect(captured().url).toContain("/v1/wallets/wal_1/payments/resolve");
     expect(captured().url).toContain("target=user%40ln.bot");
+    expect(captured().url).not.toContain("amount=");
+  });
+
+  it("resolve passes amount and returns the fee quote", async () => {
+    const quote = {
+      type: "bolt11", min: null, max: null, fixed: true, amount: 250000,
+      internal: false, networkFeeEstimate: 700, serviceFee: 625, maxFee: 805,
+      total: 251325, maxSendable: null, feeWarning: null,
+    };
+    const { client, captured } = createClient(quote);
+    const res = await client.wallet("wal_1").payments.resolve({ target: "lnbc2500u1p...", amount: 250000 });
+    expect(captured().url).toContain("target=lnbc2500u1p...");
+    expect(captured().url).toContain("amount=250000");
+    expect(res).toEqual(quote);
+  });
+
+  it("resolve of an address without amount returns maxSendable", async () => {
+    const { client } = createClient({
+      type: "lightning_address", min: 1, max: 1000000000, fixed: false, amount: null,
+      internal: false, networkFeeEstimate: null, serviceFee: null, maxFee: null,
+      total: null, maxSendable: 98012, feeWarning: null,
+    });
+    const res = await client.wallet("wal_1").payments.resolve({ target: "user@example.com" });
+    expect(res.maxSendable).toBe(98012);
+    expect(res.total).toBeNull();
   });
 });
 

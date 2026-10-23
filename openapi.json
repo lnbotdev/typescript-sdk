@@ -4,11 +4,6 @@
     "title": "Materialization.Core.LnBot | v1",
     "version": "1.0.0"
   },
-  "servers": [
-    {
-      "url": "https://api.ln.bot"
-    }
-  ],
   "paths": {
     "/": {
       "get": {
@@ -29,218 +24,14 @@
         }
       }
     },
-    "/v1/backup/passkey/begin": {
-      "post": {
-        "tags": [
-          "Backup"
-        ],
-        "summary": "Start passkey backup",
-        "description": "Begins WebAuthn registration to back up wallet access with a passkey. Requires an existing wallet.",
-        "operationId": "BackupPasskeyBegin",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BackupPasskeyBeginResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "409": {
-            "description": "Conflict"
-          }
-        }
-      }
-    },
-    "/v1/backup/passkey/complete": {
-      "post": {
-        "tags": [
-          "Backup"
-        ],
-        "summary": "Complete passkey backup",
-        "description": "Completes backup by verifying the attestation from the authenticator and linking a passkey to the wallet.",
-        "operationId": "BackupPasskeyComplete",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BackupPasskeyCompleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "409": {
-            "description": "Conflict"
-          }
-        }
-      }
-    },
-    "/v1/backup/recovery": {
-      "post": {
-        "tags": [
-          "Backup"
-        ],
-        "summary": "Generate recovery passphrase",
-        "description": "Generates a 12-word BIP-39 recovery passphrase and stores an irreversible hash. Returns the passphrase for the user to write down.",
-        "operationId": "BackupRecovery",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecoveryBackupResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/restore/passkey/begin": {
-      "post": {
-        "tags": [
-          "Restore"
-        ],
-        "summary": "Start passkey restore",
-        "description": "Begins WebAuthn authentication to restore wallet access using a passkey. Uses conditional UI (browser-mediated passkey selection).",
-        "operationId": "RestorePasskeyBegin",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RestorePasskeyBeginResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/restore/passkey/complete": {
-      "post": {
-        "tags": [
-          "Restore"
-        ],
-        "summary": "Complete passkey restore",
-        "description": "Completes restore by verifying the assertion. Revokes both API keys and returns fresh ones.",
-        "operationId": "RestorePasskeyComplete",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RestorePasskeyCompleteRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RestorePasskeyCompleteResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/v1/restore/recovery": {
-      "post": {
-        "tags": [
-          "Restore"
-        ],
-        "summary": "Restore wallet with recovery passphrase",
-        "description": "Restores wallet access by verifying the 12-word recovery passphrase. Revokes both API keys and returns fresh ones.",
-        "operationId": "RestoreRecovery",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RecoveryRestoreRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RecoveryRestoreResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/v1/wallets": {
-      "post": {
-        "tags": [
-          "Wallet"
-        ],
-        "summary": "Create a new wallet",
-        "description": "Creates a bare wallet with a random name and returns primary and secondary API keys. No authentication required.",
-        "operationId": "CreateWallet",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateWalletRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateWalletResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/wallets/current": {
+    "/v1/wallets/{walletId}": {
       "get": {
         "tags": [
           "Wallet"
         ],
-        "summary": "Get current wallet",
-        "description": "Returns the wallet ID, name, and balance of the authenticated wallet.",
-        "operationId": "GetCurrentWallet",
+        "summary": "Get wallet by ID",
+        "description": "Returns the wallet if it belongs to the authenticated caller.",
+        "operationId": "GetWallet",
         "responses": {
           "200": {
             "description": "OK",
@@ -261,9 +52,9 @@
         "tags": [
           "Wallet"
         ],
-        "summary": "Update current wallet",
+        "summary": "Update wallet",
         "description": "Updates the wallet name.",
-        "operationId": "UpdateCurrentWallet",
+        "operationId": "UpdateWallet",
         "requestBody": {
           "content": {
             "application/json": {
@@ -294,14 +85,153 @@
         }
       }
     },
-    "/v1/keys": {
+    "/v1/wallets/{walletId}/events": {
       "get": {
         "tags": [
-          "API Keys"
+          "Events"
         ],
-        "summary": "List all API keys",
-        "description": "Returns both API keys (primary and secondary) for the authenticated wallet. The key value itself is not returned — only metadata.",
-        "operationId": "ListApiKeys",
+        "summary": "Real-time event stream for wallet activity",
+        "description": "Opens a Server-Sent Events (SSE) stream that pushes real-time notifications for the authenticated wallet.\n\n**Events emitted:**\n- `invoice.created` — A new invoice was created\n- `invoice.settled` — An invoice was paid and settled\n- `payment.created` — An outgoing payment was initiated\n- `payment.settled` — An outgoing payment was settled successfully\n- `payment.failed` — An outgoing payment failed\n\n**Message format:**\nEach message is a JSON object with `event`, `created_at`, and `data` fields:\n```\ndata: {\"event\":\"invoice.settled\",\"created_at\":\"...\",\"data\":{...}}\n```\n\n**Keepalive:** A `:keepalive` comment is sent every 30 seconds to keep the connection alive.\n\n**Usage:** Connect with any SSE client (e.g. `EventSource` in browsers, `curl -N`). The stream stays open until the client disconnects. Only events that occur after the connection is opened are delivered.",
+        "operationId": "EventStream",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/key": {
+      "post": {
+        "tags": [
+          "Wallet Key"
+        ],
+        "summary": "Create wallet key",
+        "description": "Creates the wallet key (wk_). Each wallet has at most one key. Returns the plaintext key once.",
+        "operationId": "CreateWalletKey",
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletKeyResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Wallet Key"
+        ],
+        "summary": "Get wallet key info",
+        "description": "Returns metadata for the wallet key.",
+        "operationId": "GetWalletKey",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletKeyInfoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Wallet Key"
+        ],
+        "summary": "Delete wallet key",
+        "description": "Revokes the wallet key.",
+        "operationId": "DeleteWalletKey",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/key/rotate": {
+      "post": {
+        "tags": [
+          "Wallet Key"
+        ],
+        "summary": "Rotate wallet key",
+        "description": "Generates a new secret for the wallet key. The old key is immediately invalidated.",
+        "operationId": "RotateWalletKey",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletKeyResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/addresses": {
+      "post": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Create an address",
+        "description": "Creates a random address (if address is null) or claims a vanity address (if provided). Vanity addresses are charged based on length.",
+        "operationId": "CreateAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "List wallet addresses",
+        "description": "Returns all addresses belonging to the authenticated wallet.",
+        "operationId": "ListAddresses",
         "responses": {
           "200": {
             "description": "OK",
@@ -310,7 +240,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ApiKeyResponse"
+                    "$ref": "#/components/schemas/AddressResponse"
                   }
                 }
               }
@@ -319,46 +249,83 @@
         }
       }
     },
-    "/v1/keys/{slot}/rotate": {
-      "post": {
+    "/v1/wallets/{walletId}/addresses/{address}": {
+      "delete": {
         "tags": [
-          "API Keys"
+          "Addresses"
         ],
-        "summary": "Rotate an API key",
-        "description": "Generates a new secret for the specified key slot (0 = primary, 1 = secondary). The old key is immediately invalidated. The new plaintext key is returned once and cannot be retrieved again.",
-        "operationId": "RotateApiKey",
+        "summary": "Delete an address",
+        "description": "Deletes an address. No refund is given for vanity wallets.",
+        "operationId": "DeleteAddress",
         "parameters": [
           {
-            "name": "slot",
+            "name": "address",
             "in": "path",
             "required": true,
             "schema": {
-              "type": "integer",
-              "format": "int32"
+              "type": "string"
             }
           }
         ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/addresses/{address}/transfer": {
+      "post": {
+        "tags": [
+          "Addresses"
+        ],
+        "summary": "Transfer address to another wallet",
+        "description": "Transfers an address to another wallet. Caller proves source ownership via bearer token, destination ownership by providing its API key.",
+        "operationId": "TransferAddress",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RotateApiKeyResponse"
+                  "$ref": "#/components/schemas/TransferAddressResponse"
                 }
               }
             }
           },
-          "404": {
-            "description": "Not Found"
-          },
           "400": {
             "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
           }
         }
       }
     },
-    "/v1/invoices": {
+    "/v1/wallets/{walletId}/invoices": {
       "post": {
         "tags": [
           "Invoices"
@@ -437,7 +404,7 @@
         }
       }
     },
-    "/v1/invoices/{number}": {
+    "/v1/wallets/{walletId}/invoices/{number}": {
       "get": {
         "tags": [
           "Invoices"
@@ -473,7 +440,42 @@
         }
       }
     },
-    "/v1/invoices/{number}/events": {
+    "/v1/wallets/{walletId}/invoices/{paymentHash}": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Get a specific invoice by payment hash",
+        "description": "Returns the invoice with the given payment hash. Pending invoices past their expiry are reported as expired.",
+        "operationId": "GetInvoiceByHash",
+        "parameters": [
+          {
+            "name": "paymentHash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/invoices/{number}/events": {
       "get": {
         "tags": [
           "Invoices"
@@ -507,13 +509,46 @@
         }
       }
     },
-    "/v1/payments": {
+    "/v1/wallets/{walletId}/invoices/{paymentHash}/events": {
+      "get": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "SSE stream that emits when an invoice settles or expires (by payment hash)",
+        "description": "Opens a Server-Sent Events stream for a single invoice identified by payment hash. Emits a 'settled' or 'expired' event when the invoice state changes, then closes. Use ?timeout= to control max wait (default 60s, max 300s). Sends keepalive comments every 30s.",
+        "operationId": "WaitForInvoiceByHash",
+        "parameters": [
+          {
+            "name": "paymentHash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/payments": {
       "post": {
         "tags": [
           "Payments"
         ],
-        "summary": "Send sats to a Lightning address or BOLT11 invoice",
-        "description": "Accepts a Lightning address (user@domain) or a BOLT11 invoice string in the 'target' field. For addresses, 'amount' is required. For BOLT11 invoices, 'amount' is optional (uses the invoice amount if omitted). The amount is placed on hold until settlement or failure. Provide an IdempotencyKey to safely retry without duplicate payments.",
+        "summary": "Send sats to a Lightning address, LNURL, or BOLT11 invoice",
+        "description": "Accepts a Lightning address (user@domain), LNURL (lnurl1...), or a BOLT11 invoice string in the 'target' field. For addresses and LNURLs, 'amount' is required. For BOLT11 invoices, 'amount' is optional (uses the invoice amount if omitted). The amount is placed on hold until settlement or failure. Provide an IdempotencyKey to safely retry without duplicate payments.",
         "operationId": "CreatePayment",
         "requestBody": {
           "content": {
@@ -586,7 +621,52 @@
         }
       }
     },
-    "/v1/payments/{number}": {
+    "/v1/wallets/{walletId}/payments/resolve": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "Inspect and price a payment target without creating a payment",
+        "description": "Resolves a Lightning address, LNURL, or BOLT11 invoice and returns its type and amount constraints, plus what the payment would cost: Spark's network fee quote, the service fee, the fee that would be reserved, and the total. Pass 'amount' to price a Lightning address or LNURL; without it, they return 'maxSendable', the most this wallet can send there now. Pricing a Lightning address or LNURL requests an invoice from the recipient's server. Nothing is sent or held.",
+        "operationId": "ResolveTarget",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Payment target: Lightning address (user@domain), LNURL (lnurl1...), or BOLT11 invoice.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "amount",
+            "in": "query",
+            "description": "Amount in satoshis to price the payment for. Optional; for a BOLT11 invoice it must match the invoice amount.",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveTargetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/payments/{number}": {
       "get": {
         "tags": [
           "Payments"
@@ -622,77 +702,17 @@
         }
       }
     },
-    "/v1/addresses": {
-      "post": {
-        "tags": [
-          "Addresses"
-        ],
-        "summary": "Create an address",
-        "description": "Creates a random address (if address is null) or claims a vanity address (if provided). Vanity addresses are charged based on length.",
-        "operationId": "CreateAddress",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAddressRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AddressResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request"
-          },
-          "409": {
-            "description": "Conflict"
-          }
-        }
-      },
+    "/v1/wallets/{walletId}/payments/{paymentHash}": {
       "get": {
         "tags": [
-          "Addresses"
+          "Payments"
         ],
-        "summary": "List wallet addresses",
-        "description": "Returns all addresses belonging to the authenticated wallet.",
-        "operationId": "ListAddresses",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AddressResponse"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/addresses/{address}": {
-      "delete": {
-        "tags": [
-          "Addresses"
-        ],
-        "summary": "Delete an address",
-        "description": "Deletes an address. No refund is given for vanity addresses.",
-        "operationId": "DeleteAddress",
+        "summary": "Get a specific payment by payment hash",
+        "description": "Returns the payment with the given payment hash, including current status and settlement details.",
+        "operationId": "GetPaymentByHash",
         "parameters": [
           {
-            "name": "address",
+            "name": "paymentHash",
             "in": "path",
             "required": true,
             "schema": {
@@ -701,56 +721,15 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "No Content"
-          },
-          "404": {
-            "description": "Not Found"
-          }
-        }
-      }
-    },
-    "/v1/addresses/{address}/transfer": {
-      "post": {
-        "tags": [
-          "Addresses"
-        ],
-        "summary": "Transfer address to another wallet",
-        "description": "Transfers an address to another wallet. Caller proves source ownership via bearer token, destination ownership by providing its API key.",
-        "operationId": "TransferAddress",
-        "parameters": [
-          {
-            "name": "address",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TransferAddressRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
           "200": {
             "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TransferAddressResponse"
+                  "$ref": "#/components/schemas/PaymentResponse"
                 }
               }
             }
-          },
-          "400": {
-            "description": "Bad Request"
           },
           "404": {
             "description": "Not Found"
@@ -758,7 +737,74 @@
         }
       }
     },
-    "/v1/transactions": {
+    "/v1/wallets/{walletId}/payments/{number}/events": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "SSE stream that emits when a payment settles or fails",
+        "description": "Opens a Server-Sent Events stream for a single payment. Emits a 'settled' or 'failed' event when the payment state changes, then closes. Use ?timeout= to control max wait (default 60s, max 300s). Sends keepalive comments every 30s.",
+        "operationId": "WaitForPayment",
+        "parameters": [
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/payments/{paymentHash}/events": {
+      "get": {
+        "tags": [
+          "Payments"
+        ],
+        "summary": "SSE stream that emits when a payment settles or fails (by payment hash)",
+        "description": "Opens a Server-Sent Events stream for a single payment identified by payment hash. Emits a 'settled' or 'failed' event when the payment state changes, then closes. Use ?timeout= to control max wait (default 60s, max 300s). Sends keepalive comments every 30s.",
+        "operationId": "WaitForPaymentByHash",
+        "parameters": [
+          {
+            "name": "paymentHash",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/transactions": {
       "get": {
         "tags": [
           "Transactions"
@@ -801,7 +847,7 @@
         }
       }
     },
-    "/v1/webhooks": {
+    "/v1/wallets/{walletId}/webhooks": {
       "post": {
         "tags": [
           "Webhooks"
@@ -862,7 +908,7 @@
         }
       }
     },
-    "/v1/webhooks/{id}": {
+    "/v1/wallets/{walletId}/webhooks/{id}": {
       "delete": {
         "tags": [
           "Webhooks"
@@ -889,10 +935,629 @@
           }
         }
       }
+    },
+    "/v1/wallets/{walletId}/l402/challenges": {
+      "post": {
+        "tags": [
+          "L402"
+        ],
+        "summary": "Create an L402 challenge (invoice + macaroon)",
+        "description": "Creates a Lightning invoice and mints a macaroon for the authenticated wallet. Returns the pre-formatted WWW-Authenticate header value for use in HTTP 402 responses.",
+        "operationId": "CreateL402Challenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChallengeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/l402/verify": {
+      "post": {
+        "tags": [
+          "L402"
+        ],
+        "summary": "Verify an L402 authorization token",
+        "description": "Stateless verification of an L402 token. Checks macaroon signature, preimage proof-of-payment, and caveat validity (e.g., expiry). No database lookup needed.",
+        "operationId": "VerifyL402Token",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/wallets/{walletId}/l402/pay": {
+      "post": {
+        "tags": [
+          "L402"
+        ],
+        "summary": "Pay an L402 challenge and get an Authorization header",
+        "description": "Parses a WWW-Authenticate header, pays the embedded invoice, and returns a ready-to-use Authorization header. If wait=true (default), polls for settlement up to timeout seconds (default 60, max 120).",
+        "operationId": "PayL402Challenge",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/register": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Create a new user",
+        "description": "Creates a new user account with two API keys and a recovery phrase. No authentication required.",
+        "operationId": "Register",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get current identity",
+        "description": "Returns the user ID (for user keys) or wallet ID (for wallet keys) of the authenticated caller.",
+        "operationId": "Me",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeWalletResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/keys/{slot}/rotate": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Rotate a user API key",
+        "description": "Generates a new secret for the specified key slot (0 = primary, 1 = secondary). The old key is immediately invalidated. Requires a user key (uk_).",
+        "operationId": "RotateUserKey",
+        "parameters": [
+          {
+            "name": "slot",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateKeyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/wallets": {
+      "post": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Create a new wallet",
+        "description": "Creates a wallet under the authenticated user. Requires a user key (uk_). No wallet keys are created — use the wallet key endpoints to add them.",
+        "operationId": "CreateWallet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateWalletResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "List wallets",
+        "description": "Returns all wallets belonging to the authenticated user.",
+        "operationId": "ListWallets",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WalletListItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/wallets/current": {
+      "get": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Get current wallet",
+        "description": "Returns the wallet ID, name, and balance of the authenticated wallet. Requires a wallet key (wk_).",
+        "operationId": "GetCurrentWallet",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Wallet"
+        ],
+        "summary": "Update current wallet",
+        "description": "Updates the wallet name. Requires a wallet key (wk_).",
+        "operationId": "UpdateCurrentWallet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWalletRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WalletResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/invoices/for-wallet": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Create an invoice for a wallet",
+        "description": "Creates a BOLT11 invoice for the given wallet ID (wal_xxx format). The invoice is not saved until payment settles. No authentication required. Rate limited by IP.",
+        "operationId": "CreateInvoiceForWallet",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceForWalletRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/invoices/for-address": {
+      "post": {
+        "tags": [
+          "Invoices"
+        ],
+        "summary": "Create an invoice for a Lightning address",
+        "description": "Creates a BOLT11 invoice for the wallet that owns the given Lightning address. The invoice is not saved until payment settles. No authentication required. Rate limited by IP.",
+        "operationId": "CreateInvoiceForAddress",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvoiceForAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressInvoiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/v1/backup/passkey/begin": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Start passkey backup",
+        "description": "Begins WebAuthn registration to back up user access with a passkey. Requires a user key (uk_).",
+        "operationId": "BackupPasskeyBegin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupPasskeyBeginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupPasskeyBeginResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/v1/backup/passkey/complete": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Complete passkey backup",
+        "description": "Completes backup by verifying the attestation from the authenticator and linking a passkey to the user.",
+        "operationId": "BackupPasskeyComplete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupPasskeyCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          }
+        }
+      }
+    },
+    "/v1/backup/recovery": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "summary": "Generate recovery passphrase",
+        "description": "Generates a 12-word BIP-39 recovery passphrase and stores an irreversible hash. Returns the passphrase for the user to write down.",
+        "operationId": "BackupRecovery",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryBackupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore/passkey/begin": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Start passkey restore",
+        "description": "Begins WebAuthn authentication to restore user access using a passkey.",
+        "operationId": "RestorePasskeyBegin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestorePasskeyBeginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestorePasskeyBeginResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/restore/passkey/complete": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Complete passkey restore",
+        "description": "Completes restore by verifying the assertion. Revokes both user API keys and returns fresh ones.",
+        "operationId": "RestorePasskeyComplete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestorePasskeyCompleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RestorePasskeyCompleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/v1/restore/recovery": {
+      "post": {
+        "tags": [
+          "Restore"
+        ],
+        "summary": "Restore user with recovery passphrase",
+        "description": "Restores user access by verifying the 12-word recovery passphrase. Revokes both user API keys and returns fresh ones.",
+        "operationId": "RestoreRecovery",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoveryRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryRestoreResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AddressInvoiceResponse": {
+        "required": [
+          "bolt11",
+          "amount",
+          "expiresAt"
+        ],
+        "type": "object",
+        "properties": {
+          "bolt11": {
+            "type": "string",
+            "description": "BOLT11 Lightning invoice to be paid."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Invoice amount in satoshis.",
+            "format": "int64"
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the Lightning invoice expires.",
+            "format": "date-time"
+          }
+        }
+      },
       "AddressResponse": {
         "required": [
           "address",
@@ -903,13 +1568,16 @@
         "type": "object",
         "properties": {
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Lightning address in user@domain format."
           },
           "generated": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether this address was randomly generated (true) or a claimed vanity address (false)."
           },
           "cost": {
             "type": "integer",
+            "description": "Cost charged in satoshis (0 for random, varies by length for vanity).",
             "format": "int64"
           },
           "createdAt": {
@@ -917,47 +1585,13 @@
               "null",
               "string"
             ],
+            "description": "When the address was created.",
             "format": "date-time"
           }
         }
       },
       "Algorithm": {
         "type": "integer"
-      },
-      "ApiKeyResponse": {
-        "required": [
-          "id",
-          "name",
-          "hint",
-          "createdAt",
-          "lastUsedAt"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "hint": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          },
-          "lastUsedAt": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "date-time"
-          }
-        }
       },
       "AssertionOptions": {
         "type": "object",
@@ -994,7 +1628,8 @@
           "extensions": {
             "$ref": "#/components/schemas/AuthenticationExtensionsClientInputs"
           }
-        }
+        },
+        "description": "WebAuthn assertion options to pass to navigator.credentials.get()."
       },
       "AssertionResponse": {
         "required": [
@@ -1028,7 +1663,7 @@
           }
         }
       },
-      "AttestationConveyancePreference": { },
+      "AttestationConveyancePreference": {},
       "AttestationResponse": {
         "required": [
           "attestationObject",
@@ -1124,11 +1759,11 @@
           "appid": {
             "type": "boolean"
           },
-          "exts": { },
-          "uvm": { },
-          "credProps": { },
-          "prf": { },
-          "largeBlob": { },
+          "exts": {},
+          "uvm": {},
+          "credProps": {},
+          "prf": {},
+          "largeBlob": {},
           "credProtect": {
             "$ref": "#/components/schemas/NullableOfCredentialProtectionPolicy"
           }
@@ -1260,7 +1895,8 @@
           "clientExtensionResults": {
             "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
           }
-        }
+        },
+        "description": "Assertion response from navigator.credentials.get()."
       },
       "AuthenticatorAttestationRawResponse": {
         "required": [
@@ -1297,7 +1933,8 @@
           "clientExtensionResults": {
             "$ref": "#/components/schemas/AuthenticationExtensionsClientOutputs"
           }
-        }
+        },
+        "description": "Attestation response from navigator.credentials.create()."
       },
       "AuthenticatorSelection": {
         "type": [
@@ -1319,6 +1956,21 @@
           }
         }
       },
+      "BackupPasskeyBeginRequest": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "rpId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Custom relying party domain. Omit to use the default."
+          }
+        }
+      },
       "BackupPasskeyBeginResponse": {
         "required": [
           "sessionId",
@@ -1327,7 +1979,8 @@
         "type": "object",
         "properties": {
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "description": "Session ID to pass to the complete endpoint."
           },
           "options": {
             "$ref": "#/components/schemas/CredentialCreateOptions"
@@ -1342,10 +1995,44 @@
         "type": "object",
         "properties": {
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "description": "Session ID from the begin response."
           },
           "attestation": {
             "$ref": "#/components/schemas/AuthenticatorAttestationRawResponse"
+          }
+        }
+      },
+      "ChallengeResponse": {
+        "required": [
+          "macaroon",
+          "invoice",
+          "paymentHash",
+          "expiresAt",
+          "wwwAuthenticate"
+        ],
+        "type": "object",
+        "properties": {
+          "macaroon": {
+            "type": "string",
+            "description": "Base64-encoded macaroon token."
+          },
+          "invoice": {
+            "type": "string",
+            "description": "BOLT11 Lightning invoice to be paid."
+          },
+          "paymentHash": {
+            "type": "string",
+            "description": "Hex-encoded SHA-256 payment hash of the invoice."
+          },
+          "expiresAt": {
+            "type": "string",
+            "description": "When the Lightning invoice expires.",
+            "format": "date-time"
+          },
+          "wwwAuthenticate": {
+            "type": "string",
+            "description": "Pre-formatted WWW-Authenticate header value: L402 macaroon=\"<base64>\", invoice=\"<bolt11>\"."
           }
         }
       },
@@ -1359,7 +2046,117 @@
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Vanity address to claim (3-36 chars, alphanumeric + hyphens). Omit for a random address."
+          }
+        }
+      },
+      "CreateChallengeRequest": {
+        "required": [
+          "amount",
+          "description",
+          "expirySeconds",
+          "caveats"
+        ],
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Invoice amount in satoshis (1 to 1,000,000,000).",
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional description embedded in the Lightning invoice (max 256 chars)."
+          },
+          "expirySeconds": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Optional token expiry in seconds (1 to 31,536,000). Adds an expiry= caveat to the macaroon.",
+            "format": "int32"
+          },
+          "caveats": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Optional custom caveats to embed in the macaroon (max 10, each max 256 chars). Format: key=value."
+          }
+        }
+      },
+      "CreateInvoiceForAddressRequest": {
+        "required": [
+          "address",
+          "amount",
+          "tag",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Lightning address in user@domain format."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Invoice amount in satoshis (1 to 1,000,000,000).",
+            "format": "int64"
+          },
+          "tag": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional tag for categorizing the payment (max 256 chars)."
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional comment from the payer (max 256 chars)."
+          }
+        }
+      },
+      "CreateInvoiceForWalletRequest": {
+        "required": [
+          "walletId",
+          "amount",
+          "reference",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string",
+            "description": "Wallet ID in wal_xxx format."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Invoice amount in satoshis (1 to 1,000,000,000).",
+            "format": "int64"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional reference string stored with the invoice (max 256 chars)."
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional comment from the payer (max 256 chars)."
           }
         }
       },
@@ -1373,19 +2170,22 @@
         "properties": {
           "amount": {
             "type": "integer",
+            "description": "Invoice amount in satoshis (1 to 1,000,000,000).",
             "format": "int64"
           },
           "reference": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Optional reference string stored with the invoice for your own tracking (max 256 chars)."
           },
           "memo": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Optional memo embedded in the BOLT11 invoice (max 256 chars). Visible to the payer."
           }
         }
       },
@@ -1404,74 +2204,56 @@
               "null",
               "integer"
             ],
+            "description": "Amount in satoshis. Required for Lightning addresses and LNURLs. Optional for BOLT11 invoices (uses invoice amount if omitted).",
             "format": "int64"
           },
           "target": {
-            "type": "string"
+            "type": "string",
+            "description": "Payment destination: a Lightning address (user@domain), LNURL (lnurl1...), or BOLT11 invoice string."
           },
           "idempotencyKey": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Optional idempotency key (UUID recommended). Prevents duplicate payments on retry."
           },
           "maxFee": {
             "type": [
               "null",
               "integer"
             ],
+            "description": "Maximum network fee in satoshis: Spark's fee (0.25%) plus Lightning routing. Defaults to 1% of the amount, minimum 20 sats. The fee is quoted when the payment is created: a quote above this cap rejects the payment, and only the quote plus a small buffer is held. Ignored for internal transfers.",
             "format": "int64"
           },
           "reference": {
             "type": [
               "null",
               "string"
-            ]
-          }
-        }
-      },
-      "CreateWalletRequest": {
-        "type": [
-          "null",
-          "object"
-        ],
-        "properties": {
-          "name": {
-            "type": [
-              "null",
-              "string"
-            ]
+            ],
+            "description": "Optional reference string stored with the payment for your own tracking."
           }
         }
       },
       "CreateWalletResponse": {
         "required": [
           "walletId",
-          "primaryKey",
-          "secondaryKey",
           "name",
-          "address",
-          "recoveryPassphrase"
+          "address"
         ],
         "type": "object",
         "properties": {
           "walletId": {
-            "type": "string"
-          },
-          "primaryKey": {
-            "type": "string"
-          },
-          "secondaryKey": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet ID in wal_xxx format."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet display name."
           },
           "address": {
-            "type": "string"
-          },
-          "recoveryPassphrase": {
-            "type": "string"
+            "type": "string",
+            "description": "Lightning address assigned to this wallet (user@domain format)."
           }
         }
       },
@@ -1482,7 +2264,8 @@
         "type": "object",
         "properties": {
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "Absolute HTTPS URL to receive webhook callbacks (max 2048 chars)."
           }
         }
       },
@@ -1496,19 +2279,23 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Webhook endpoint ID (deterministic hash of the URL)."
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "Registered webhook URL."
           },
           "secret": {
-            "type": "string"
+            "type": "string",
+            "description": "HMAC signing secret (hex-encoded, 32 bytes). Store securely — it cannot be retrieved again."
           },
           "createdAt": {
             "type": [
               "null",
               "string"
             ],
+            "description": "When the webhook endpoint was created.",
             "format": "date-time"
           }
         }
@@ -1563,7 +2350,8 @@
           "extensions": {
             "$ref": "#/components/schemas/AuthenticationExtensionsClientInputs"
           }
-        }
+        },
+        "description": "WebAuthn credential creation options to pass to navigator.credentials.create()."
       },
       "CredentialPropertiesOutput": {
         "type": [
@@ -1579,6 +2367,18 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "ErrorResponse": {
+        "required": [
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message describing what went wrong."
           }
         }
       },
@@ -1614,6 +2414,7 @@
           "bolt11",
           "reference",
           "memo",
+          "preimage",
           "txNumber",
           "createdAt",
           "settledAt",
@@ -1623,6 +2424,7 @@
         "properties": {
           "number": {
             "type": "integer",
+            "description": "Sequential invoice number within this wallet.",
             "format": "int32"
           },
           "status": {
@@ -1630,28 +2432,40 @@
           },
           "amount": {
             "type": "integer",
+            "description": "Invoice amount in satoshis.",
             "format": "int64"
           },
           "bolt11": {
-            "type": "string"
+            "type": "string",
+            "description": "BOLT11 Lightning invoice string."
           },
           "reference": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Reference string provided when creating the invoice."
           },
           "memo": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Memo embedded in the BOLT11 invoice."
+          },
+          "preimage": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Hex-encoded preimage revealed on settlement. Null if not yet settled."
           },
           "txNumber": {
             "type": [
               "null",
               "integer"
             ],
+            "description": "Transaction number in the wallet ledger. Null if not yet settled.",
             "format": "int32"
           },
           "createdAt": {
@@ -1659,6 +2473,7 @@
               "null",
               "string"
             ],
+            "description": "When the invoice was created.",
             "format": "date-time"
           },
           "settledAt": {
@@ -1666,6 +2481,7 @@
               "null",
               "string"
             ],
+            "description": "When the invoice was paid. Null if not yet settled.",
             "format": "date-time"
           },
           "expiresAt": {
@@ -1673,6 +2489,7 @@
               "null",
               "string"
             ],
+            "description": "When the invoice expires. Pending invoices past this time are treated as expired.",
             "format": "date-time"
           }
         }
@@ -1682,10 +2499,32 @@
           "pending",
           "settled",
           "expired"
-        ]
+        ],
+        "description": "Current invoice status."
       },
-      "NullableOfAuthenticatorAttachment": { },
-      "NullableOfCredentialProtectionPolicy": { },
+      "L402PaymentStatus": {
+        "enum": [
+          "pending",
+          "processing",
+          "settled",
+          "failed"
+        ],
+        "description": "Current payment status."
+      },
+      "MeWalletResponse": {
+        "required": [
+          "walletId"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string",
+            "description": "Wallet ID in wal_xxx format."
+          }
+        }
+      },
+      "NullableOfAuthenticatorAttachment": {},
+      "NullableOfCredentialProtectionPolicy": {},
       "NullableOfKeyValuePairOfstringAndAuthenticationExtensionsPRFValues": {
         "required": [
           "key",
@@ -1707,17 +2546,19 @@
           }
         }
       },
-      "NullableOfLargeBlobSupport": { },
-      "NullableOfUserVerificationRequirement": { },
+      "NullableOfLargeBlobSupport": {},
+      "NullableOfUserVerificationRequirement": {},
       "PaymentResponse": {
         "required": [
           "number",
           "status",
           "amount",
           "maxFee",
+          "serviceFee",
           "actualFee",
           "address",
           "reference",
+          "preimage",
           "txNumber",
           "failureReason",
           "createdAt",
@@ -1727,6 +2568,7 @@
         "properties": {
           "number": {
             "type": "integer",
+            "description": "Sequential payment number within this wallet.",
             "format": "int32"
           },
           "status": {
@@ -1734,10 +2576,17 @@
           },
           "amount": {
             "type": "integer",
+            "description": "Payment amount in satoshis.",
             "format": "int64"
           },
           "maxFee": {
             "type": "integer",
+            "description": "Network fee reserved in satoshis: the Spark fee quote plus a small buffer, or the cap when no quote was available. The unused part is released at settlement.",
+            "format": "int64"
+          },
+          "serviceFee": {
+            "type": "integer",
+            "description": "Service fee charged in satoshis.",
             "format": "int64"
           },
           "actualFee": {
@@ -1745,35 +2594,48 @@
               "null",
               "integer"
             ],
+            "description": "Network fee charged in satoshis: what the send actually cost (Spark's fee plus routing). Null if not yet settled.",
             "format": "int64"
           },
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Resolved payment destination (Lightning address, LNURL, or BOLT11)."
           },
           "reference": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Reference string provided when creating the payment."
+          },
+          "preimage": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Hex-encoded preimage (proof of payment). Null if not yet settled."
           },
           "txNumber": {
             "type": [
               "null",
               "integer"
             ],
+            "description": "Transaction number in the wallet ledger. Null if not yet settled.",
             "format": "int32"
           },
           "failureReason": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Reason the payment failed. Null if not failed."
           },
           "createdAt": {
             "type": [
               "null",
               "string"
             ],
+            "description": "When the payment was created.",
             "format": "date-time"
           },
           "settledAt": {
@@ -1781,6 +2643,7 @@
               "null",
               "string"
             ],
+            "description": "When the payment settled. Null if not yet settled.",
             "format": "date-time"
           }
         }
@@ -1791,7 +2654,107 @@
           "processing",
           "settled",
           "failed"
-        ]
+        ],
+        "description": "Current payment status."
+      },
+      "PayRequest": {
+        "required": [
+          "wwwAuthenticate",
+          "maxFee",
+          "reference",
+          "wait",
+          "timeout"
+        ],
+        "type": "object",
+        "properties": {
+          "wwwAuthenticate": {
+            "type": "string",
+            "description": "WWW-Authenticate header value from an HTTP 402 response. Format: L402 macaroon=\"<base64>\", invoice=\"<bolt11>\"."
+          },
+          "maxFee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Maximum network fee in satoshis (Spark's fee plus Lightning routing). Defaults to 1% of the amount, minimum 20 sats.",
+            "format": "int64"
+          },
+          "reference": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional reference string stored with the payment for tracking."
+          },
+          "wait": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "If true (default), polls for settlement up to timeout seconds before returning."
+          },
+          "timeout": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Max seconds to wait for settlement (1-120, default 60). Only used when wait=true.",
+            "format": "int32"
+          }
+        }
+      },
+      "PayResponse": {
+        "required": [
+          "authorization",
+          "paymentHash",
+          "preimage",
+          "amount",
+          "fee",
+          "paymentNumber",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "authorization": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Ready-to-use authorization token: L402 <base64_macaroon>:<hex_preimage>. Null if payment hasn't settled yet."
+          },
+          "paymentHash": {
+            "type": "string",
+            "description": "Hex-encoded SHA-256 payment hash."
+          },
+          "preimage": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Hex-encoded preimage (proof of payment). Null if not yet settled."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Payment amount in satoshis.",
+            "format": "int64"
+          },
+          "fee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Network fee charged in satoshis (Spark's fee plus routing). Null if not yet settled.",
+            "format": "int64"
+          },
+          "paymentNumber": {
+            "type": "integer",
+            "description": "Payment number for this wallet. Can be used to poll payment status.",
+            "format": "int32"
+          },
+          "status": {
+            "$ref": "#/components/schemas/L402PaymentStatus"
+          }
+        }
       },
       "PubKeyCredParam": {
         "required": [
@@ -1850,7 +2813,7 @@
           }
         }
       },
-      "PublicKeyCredentialType": { },
+      "PublicKeyCredentialType": {},
       "RecoveryBackupResponse": {
         "required": [
           "passphrase"
@@ -1858,7 +2821,8 @@
         "type": "object",
         "properties": {
           "passphrase": {
-            "type": "string"
+            "type": "string",
+            "description": "12-word BIP-39 recovery passphrase. Store securely — it cannot be retrieved again."
           }
         }
       },
@@ -1869,34 +2833,178 @@
         "type": "object",
         "properties": {
           "passphrase": {
-            "type": "string"
+            "type": "string",
+            "description": "12-word BIP-39 recovery passphrase."
           }
         }
       },
       "RecoveryRestoreResponse": {
         "required": [
-          "walletId",
-          "name",
+          "userId",
           "primaryKey",
           "secondaryKey"
         ],
         "type": "object",
         "properties": {
-          "walletId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
+          "userId": {
+            "type": "string",
+            "description": "User ID in usr_xxx format."
           },
           "primaryKey": {
-            "type": "string"
+            "type": "string",
+            "description": "New primary API key. Store securely — it cannot be retrieved again."
           },
           "secondaryKey": {
-            "type": "string"
+            "type": "string",
+            "description": "New secondary API key. Store securely — it cannot be retrieved again."
           }
         }
       },
-      "ResidentKeyRequirement": { },
+      "RegisterResponse": {
+        "required": [
+          "userId",
+          "primaryKey",
+          "secondaryKey",
+          "recoveryPassphrase"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "description": "User ID in usr_xxx format."
+          },
+          "primaryKey": {
+            "type": "string",
+            "description": "Primary API key. Store securely — it cannot be retrieved again."
+          },
+          "secondaryKey": {
+            "type": "string",
+            "description": "Secondary API key. Store securely — it cannot be retrieved again."
+          },
+          "recoveryPassphrase": {
+            "type": "string",
+            "description": "12-word BIP-39 recovery passphrase. Store securely — it cannot be retrieved again."
+          }
+        }
+      },
+      "ResidentKeyRequirement": {},
+      "ResolveTargetResponse": {
+        "required": [
+          "type",
+          "min",
+          "max",
+          "fixed",
+          "amount",
+          "internal",
+          "networkFeeEstimate",
+          "serviceFee",
+          "maxFee",
+          "total",
+          "maxSendable",
+          "feeWarning"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Target type: \"lightning_address\", \"lnurl\", or \"bolt11\"."
+          },
+          "min": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Minimum accepted amount in satoshis. Null for BOLT11 invoices.",
+            "format": "int64"
+          },
+          "max": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Maximum accepted amount in satoshis. Null for BOLT11 invoices.",
+            "format": "int64"
+          },
+          "fixed": {
+            "type": "boolean",
+            "description": "True if the recipient expects a fixed amount (min == max, or BOLT11 with amount)."
+          },
+          "amount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The amount priced: the invoice amount for a BOLT11 invoice, or the requested amount. Null when no amount was given.",
+            "format": "int64"
+          },
+          "internal": {
+            "type": "boolean",
+            "description": "True when the target is a wallet on this service: an internal transfer with no network or service fee."
+          },
+          "networkFeeEstimate": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Spark's network fee quote in satoshis for Amount: Spark's fee (0.25%) plus Lightning routing. Null without an amount, or when no quote is available. 0 for internal transfers.",
+            "format": "int64"
+          },
+          "serviceFee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Service fee in satoshis for Amount: 0.25%, minimum 1 sat. 0 for internal transfers. Null without an amount.",
+            "format": "int64"
+          },
+          "maxFee": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Network fee that would be reserved with the default maxFee: the quote plus a small buffer, or the default limit when no quote is available. The unused part is released at settlement. Null without an amount, or when the quote is above the default limit (see FeeWarning).",
+            "format": "int64"
+          },
+          "total": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Expected total cost in satoshis: Amount plus the network fee estimate and the service fee. Uses the reserved limit when no quote is available. Null without an amount.",
+            "format": "int64"
+          },
+          "maxSendable": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "For a Lightning address or LNURL asked without an amount: the most this wallet can send there now with the default maxFee, after fees (0 if it can't cover the recipient's minimum). Null otherwise.",
+            "format": "int64"
+          },
+          "feeWarning": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Set when creating this payment with the default maxFee would be rejected, for example because the fee quote is above the default limit."
+          }
+        }
+      },
+      "RestorePasskeyBeginRequest": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "properties": {
+          "rpId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Custom relying party domain. Must match the domain used during backup."
+          }
+        }
+      },
       "RestorePasskeyBeginResponse": {
         "required": [
           "sessionId",
@@ -1905,7 +3013,8 @@
         "type": "object",
         "properties": {
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "description": "Session ID to pass to the complete endpoint."
           },
           "options": {
             "$ref": "#/components/schemas/AssertionOptions"
@@ -1920,7 +3029,8 @@
         "type": "object",
         "properties": {
           "sessionId": {
-            "type": "string"
+            "type": "string",
+            "description": "Session ID from the begin response."
           },
           "assertion": {
             "$ref": "#/components/schemas/AuthenticatorAssertionRawResponse"
@@ -1929,28 +3039,27 @@
       },
       "RestorePasskeyCompleteResponse": {
         "required": [
-          "walletId",
-          "name",
+          "userId",
           "primaryKey",
           "secondaryKey"
         ],
         "type": "object",
         "properties": {
-          "walletId": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
+          "userId": {
+            "type": "string",
+            "description": "User ID in usr_xxx format."
           },
           "primaryKey": {
-            "type": "string"
+            "type": "string",
+            "description": "New primary API key. Store securely — it cannot be retrieved again."
           },
           "secondaryKey": {
-            "type": "string"
+            "type": "string",
+            "description": "New secondary API key. Store securely — it cannot be retrieved again."
           }
         }
       },
-      "RotateApiKeyResponse": {
+      "RotateKeyResponse": {
         "required": [
           "key",
           "name"
@@ -1958,10 +3067,12 @@
         "type": "object",
         "properties": {
           "key": {
-            "type": "string"
+            "type": "string",
+            "description": "The new plaintext API key. Store securely — it cannot be retrieved again."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Key name: Primary or Secondary."
           }
         }
       },
@@ -1983,6 +3094,7 @@
         "properties": {
           "number": {
             "type": "integer",
+            "description": "Sequential transaction number within this wallet.",
             "format": "int32"
           },
           "type": {
@@ -1990,49 +3102,58 @@
           },
           "amount": {
             "type": "integer",
+            "description": "Transaction amount in satoshis. For debits, includes fees.",
             "format": "int64"
           },
           "balanceAfter": {
             "type": "integer",
+            "description": "Wallet balance in satoshis after this transaction was applied.",
             "format": "int64"
           },
           "networkFee": {
             "type": "integer",
+            "description": "Lightning network routing fee in satoshis (debit only).",
             "format": "int64"
           },
           "serviceFee": {
             "type": "integer",
+            "description": "Service fee in satoshis (debit only).",
             "format": "int64"
           },
           "paymentHash": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Hex-encoded SHA-256 payment hash. Null for non-Lightning transactions."
           },
           "preimage": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Hex-encoded preimage (proof of payment). Null for non-Lightning transactions."
           },
           "reference": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Reference string from the associated invoice or payment."
           },
           "note": {
             "type": [
               "null",
               "string"
-            ]
+            ],
+            "description": "Human-readable note (e.g. 'Transfer from Alice', 'Vanity address: cool')."
           },
           "createdAt": {
             "type": [
               "null",
               "string"
             ],
+            "description": "When the transaction was created.",
             "format": "date-time"
           }
         }
@@ -2041,7 +3162,8 @@
         "enum": [
           "credit",
           "debit"
-        ]
+        ],
+        "description": "Transaction type: credit (incoming) or debit (outgoing)."
       },
       "TransferAddressRequest": {
         "required": [
@@ -2050,7 +3172,8 @@
         "type": "object",
         "properties": {
           "targetWalletKey": {
-            "type": "string"
+            "type": "string",
+            "description": "API key of the destination wallet. Proves ownership of the target wallet."
           }
         }
       },
@@ -2062,10 +3185,12 @@
         "type": "object",
         "properties": {
           "address": {
-            "type": "string"
+            "type": "string",
+            "description": "Lightning address that was transferred."
           },
           "transferredTo": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet ID (wal_xxx) the address was transferred to."
           }
         }
       },
@@ -2076,11 +3201,136 @@
         "type": "object",
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "New wallet name (1-50 chars)."
           }
         }
       },
-      "UserVerificationRequirement": { },
+      "UserVerificationRequirement": {},
+      "VerifyRequest": {
+        "required": [
+          "authorization"
+        ],
+        "type": "object",
+        "properties": {
+          "authorization": {
+            "type": "string",
+            "description": "L402 authorization token in format: L402 <base64_macaroon>:<hex_preimage>."
+          }
+        }
+      },
+      "VerifyResponse": {
+        "required": [
+          "valid",
+          "paymentHash",
+          "caveats",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "description": "Whether the token is valid (signature, preimage, and caveats all pass)."
+          },
+          "paymentHash": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Hex-encoded payment hash extracted from the macaroon, if parseable."
+          },
+          "caveats": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Caveats extracted from the macaroon, if parseable."
+          },
+          "error": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Error message if validation failed. Null when valid."
+          }
+        }
+      },
+      "WalletKeyInfoResponse": {
+        "required": [
+          "hint",
+          "createdAt",
+          "lastUsedAt"
+        ],
+        "type": "object",
+        "properties": {
+          "hint": {
+            "type": "string",
+            "description": "Display hint showing first and last characters of the key."
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the key was created.",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the key was last used.",
+            "format": "date-time"
+          }
+        }
+      },
+      "WalletKeyResponse": {
+        "required": [
+          "key",
+          "hint"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The new plaintext wallet API key. Store securely — it cannot be retrieved again."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Display hint showing first and last characters of the key."
+          }
+        }
+      },
+      "WalletListItem": {
+        "required": [
+          "walletId",
+          "name",
+          "createdAt"
+        ],
+        "type": "object",
+        "properties": {
+          "walletId": {
+            "type": "string",
+            "description": "Wallet ID in wal_xxx format."
+          },
+          "name": {
+            "type": "string",
+            "description": "Wallet display name."
+          },
+          "createdAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the wallet was created.",
+            "format": "date-time"
+          }
+        }
+      },
       "WalletResponse": {
         "required": [
           "walletId",
@@ -2092,21 +3342,26 @@
         "type": "object",
         "properties": {
           "walletId": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet ID in wal_xxx format."
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "description": "Wallet display name."
           },
           "balance": {
             "type": "integer",
+            "description": "Total balance in satoshis.",
             "format": "int64"
           },
           "onHold": {
             "type": "integer",
+            "description": "Amount reserved for pending payments in satoshis.",
             "format": "int64"
           },
           "available": {
             "type": "integer",
+            "description": "Balance minus on-hold amount in satoshis. This is what can be spent.",
             "format": "int64"
           }
         }
@@ -2121,19 +3376,23 @@
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "string",
+            "description": "Webhook endpoint ID."
           },
           "url": {
-            "type": "string"
+            "type": "string",
+            "description": "Registered webhook URL."
           },
           "active": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether this endpoint is active and receiving events."
           },
           "createdAt": {
             "type": [
               "null",
               "string"
             ],
+            "description": "When the webhook endpoint was created.",
             "format": "date-time"
           }
         }
@@ -2145,16 +3404,16 @@
       "name": "Materialization.Core.LnBot"
     },
     {
-      "name": "Backup"
-    },
-    {
-      "name": "Restore"
-    },
-    {
       "name": "Wallet"
     },
     {
-      "name": "API Keys"
+      "name": "Events"
+    },
+    {
+      "name": "Wallet Key"
+    },
+    {
+      "name": "Addresses"
     },
     {
       "name": "Invoices"
@@ -2163,13 +3422,22 @@
       "name": "Payments"
     },
     {
-      "name": "Addresses"
-    },
-    {
       "name": "Transactions"
     },
     {
       "name": "Webhooks"
+    },
+    {
+      "name": "L402"
+    },
+    {
+      "name": "Account"
+    },
+    {
+      "name": "Backup"
+    },
+    {
+      "name": "Restore"
     }
   ]
 }
