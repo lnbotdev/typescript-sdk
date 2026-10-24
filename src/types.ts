@@ -486,13 +486,21 @@ export interface L402PayResponse {
 // SSE events
 // ---------------------------------------------------------------------------
 
+/**
+ * An event from `invoices.watch()`. `timeout` means the wait ran out before the
+ * invoice settled or expired: `data` is its current state; read or watch again.
+ */
 export interface InvoiceEvent {
-  event: "settled" | "expired";
+  event: "settled" | "expired" | "timeout";
   data: InvoiceResponse;
 }
 
+/**
+ * An event from `payments.watch()`. `timeout` means the wait ran out before the
+ * payment settled or failed: `data` is its current state; read or watch again.
+ */
 export interface PaymentEvent {
-  event: "settled" | "failed";
+  event: "settled" | "failed" | "timeout";
   data: PaymentResponse;
 }
 
@@ -507,6 +515,10 @@ export type WalletEventType =
   | "payment.settled"
   | "payment.failed";
 
+/**
+ * An event from `events.stream()`. `data` is the invoice or payment; the
+ * `*.created` events carry only the fields known at creation.
+ */
 export interface WalletEvent {
   event: WalletEventType;
   createdAt: string;

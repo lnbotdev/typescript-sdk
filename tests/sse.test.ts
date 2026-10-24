@@ -273,3 +273,86 @@ describe("events.stream", () => {
     }).rejects.toThrow(LnBotError);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Wire format: the API sends event payloads in snake_case
+// ---------------------------------------------------------------------------
+
+describe("snake_case event payloads", () => {
+  const settledPayment = '{"number":1,"status":"settled","amount":20,"max_fee":5,"service_fee":1,"actual_fee":3,"address":"bub@bub.gg","reference":null,"preimage":"ab12","tx_number":4,"failure_reason":null,"created_at":"2026-10-24T14:50:01Z","settled_at":"2026-10-24T14:50:14Z"}';
+
+  it("payments.watch decodes fees, tx number and timestamps", async () => {
+    const mock = sseFetch([`event: settled\ndata: ${settledPayment}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(1)) events.push(event);
+
+    expect(events).toHaveLength(1);
+    expect(events[0].data).toMatchObject({
+      amount: 20, maxFee: 5, serviceFee: 1, actualFee: 3, txNumber: 4,
+      failureReason: null, settledAt: "2026-10-24T14:50:14Z",
+    });
+  });
+
+  it("payments.watch decodes a failure reason", async () => {
+    const failed = '{"number":2,"status":"failed","amount":500,"max_fee":20,"service_fee":2,"actual_fee":null,"address":"x@y.com","failure_reason":"Invoice expired before it could be paid."}';
+    const mock = sseFetch([`event: failed\ndata: ${failed}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(2)) events.push(event);
+
+    expect(events[0].event).toBe("failed");
+    expect(events[0].data.failureReason).toBe("Invoice expired before it could be paid.");
+  });
+
+  it("watch yields a timeout event with the current state", async () => {
+    const pending = '{"number":3,"status":"pending","amount":100,"max_fee":20,"service_fee":1,"actual_fee":null,"address":"x@y.com"}';
+    const mock = sseFetch([`event: timeout\ndata: ${pending}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(3)) events.push(event);
+
+    expect(events[0].event).toBe("timeout");
+    expect(events[0].data).toMatchObject({ status: "pending", maxFee: 20 });
+  });
+
+  it("invoices.watch decodes tx number and timestamps", async () => {
+    const invoice = '{"number":7,"status":"settled","amount":1000,"bolt11":"lnbc10u1p","reference":null,"memo":null,"preimage":"cd34","tx_number":4,"created_at":"2026-10-24T14:00:00Z","settled_at":"2026-10-24T14:01:00Z","expires_at":"2026-10-24T15:00:00Z"}';
+    const mock = sseFetch([`event: settled\ndata: ${invoice}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").invoices.watch(7)) events.push(event);
+
+    expect(events[0].data).toMatchObject({ txNumber: 4, settledAt: "2026-10-24T14:01:00Z", expiresAt: "2026-10-24T15:00:00Z" });
+  });
+
+  it("events.stream decodes the envelope and its data", async () => {
+    const settled = `{"event":"payment.settled","created_at":"2026-10-24T14:50:14.123+00:00","data":${settledPayment}}`;
+    const created = '{"event":"payment.created","created_at":"2026-10-24T14:50:01+00:00","data":{"number":1,"status":"pending","amount":20,"max_fee":5,"service_fee":1,"address":"bub@bub.gg","reference":null,"created_at":"2026-10-24T14:50:01Z"}}';
+    const mock = sseFetch([`data: ${created}\n\ndata: ${settled}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").events.stream()) events.push(event);
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toMatchObject({ event: "payment.created", createdAt: "2026-10-24T14:50:01+00:00" });
+    expect(events[0].data).toMatchObject({ status: "pending", maxFee: 5, serviceFee: 1 });
+    expect(events[1].createdAt).toBe("2026-10-24T14:50:14.123+00:00");
+    expect(events[1].data).toMatchObject({ actualFee: 3, serviceFee: 1, txNumber: 4 });
+  });
+
+  it("still accepts camelCase payloads", async () => {
+    const mock = sseFetch([`event: settled\ndata: {"number":1,"status":"settled","amount":20,"actualFee":3,"serviceFee":1}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(1)) events.push(event);
+
+    expect(events[0].data).toMatchObject({ actualFee: 3, serviceFee: 1 });
+  });
+});

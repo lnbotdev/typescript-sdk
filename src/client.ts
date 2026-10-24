@@ -84,6 +84,21 @@ type HttpClient = {
 // SSE helper
 // ---------------------------------------------------------------------------
 
+/**
+ * Event streams and webhooks send their JSON in snake_case (`actual_fee`,
+ * `created_at`) while REST responses, and the SDK's types, are camelCase.
+ * Converts keys at every depth; camelCase keys pass through unchanged.
+ */
+function camelizeKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(camelizeKeys);
+  if (value === null || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [key, v] of Object.entries(value)) {
+    out[key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase())] = camelizeKeys(v);
+  }
+  return out;
+}
+
 async function* readSSE<E extends { event: string; data: unknown }>(
   http: HttpClient,
   path: string,
@@ -127,7 +142,7 @@ async function* readSSE<E extends { event: string; data: unknown }>(
           const raw = line.slice(5).trim();
           if (raw && eventType) {
             try {
-              const data = JSON.parse(raw);
+              const data = camelizeKeys(JSON.parse(raw));
               const evt = parseEvent(eventType, data);
               if (evt) yield evt;
             } catch {
@@ -278,7 +293,8 @@ export class InvoicesResource {
   }
 
   /**
-   * Opens an SSE stream that resolves when the invoice settles or expires.
+   * Opens an SSE stream that resolves when the invoice settles or expires. If the wait
+   * runs out first, it yields a `timeout` event with the invoice's current state.
    *
    * @param numberOrHash  Invoice number or payment hash
    * @param timeout Max wait in seconds (default 60, max 300)
@@ -332,7 +348,8 @@ export class PaymentsResource {
   }
 
   /**
-   * Opens an SSE stream that resolves when the payment settles or fails.
+   * Opens an SSE stream that resolves when the payment settles or fails. If the wait
+   * runs out first, it yields a `timeout` event with the payment's current state.
    *
    * @param numberOrHash  Payment number or payment hash
    * @param timeout Max wait in seconds (default 60, max 300)
@@ -463,7 +480,7 @@ export class EventsResource {
           const raw = line.slice(5).trim();
           if (!raw) continue;
           try {
-            yield JSON.parse(raw) as WalletEvent;
+            yield camelizeKeys(JSON.parse(raw)) as WalletEvent;
           } catch {
             // non-JSON keepalive, skip
           }

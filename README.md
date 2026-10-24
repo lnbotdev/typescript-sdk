@@ -97,9 +97,7 @@ console.log(invoice.bolt11); // share with the payer
 ### 3. Wait for payment (SSE)
 
 ```typescript
-// SSE requires a wallet key (wk_...)
-const wkClient = new LnBot({ apiKey: "wk_..." });
-const w = wkClient.wallet("wal_...");
+const w = client.wallet("wal_...");
 
 for await (const event of w.invoices.watch(invoice.number)) {
   if (event.event === "settled") {
@@ -171,7 +169,7 @@ if (maxSendable) {
 ln.bot uses two key types:
 
 - **User key** (`uk_...`) — manages all wallets under your account. Use for creating wallets, listing wallets, rotating user keys.
-- **Wallet key** (`wk_...`) — scoped to a single wallet. Use for SSE streams, or to give a service access to one wallet only.
+- **Wallet key** (`wk_...`) — scoped to a single wallet. Use it to give a service or an agent access to one wallet only.
 
 ```typescript
 // User key — full account access
@@ -337,7 +335,7 @@ const { valid } = await w.l402.verify({
 
 ```typescript
 for await (const event of w.invoices.watch(invoiceNumber, 120)) {
-  // event.event: "pending" | "settled" | "expired"
+  // event.event: "settled" | "expired" | "timeout" (the wait ran out; data is the current state)
   // event.data: InvoiceResponse
 }
 ```
@@ -348,7 +346,7 @@ An `expired` invoice is not always final: one paid just before it expired can st
 
 ```typescript
 for await (const event of w.payments.watch(paymentNumber, 60)) {
-  // event.event: "processing" | "settled" | "failed"
+  // event.event: "settled" | "failed" | "timeout" (the wait ran out; data is the current state)
   // event.data: PaymentResponse
 }
 ```
@@ -366,7 +364,7 @@ for await (const event of w.events.stream(controller.signal)) {
 }
 ```
 
-> SSE streams require wallet key (`wk_...`) authentication.
+Event streams work with a user key or a wallet key. The API sends event and webhook payloads in snake_case (`actual_fee`, `created_at`); the SDK converts them to the camelCase fields used everywhere else, so `event.data.actualFee` works. A webhook handler reads the raw snake_case JSON.
 
 ## Pagination
 
