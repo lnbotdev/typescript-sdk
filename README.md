@@ -410,7 +410,7 @@ for await (const event of w.payments.watch(paymentNumber, 60)) {
 }
 ```
 
-A `timeout` event's `data` carries the payment's `stage` and `statusDetail` ([payment stages](#payment-stages)); the stream doesn't send an event for each stage change. A payment that can't be routed yet stays `pending` and is retried automatically. It fails with `failureReason` set to `Invoice expired before it could be paid.` if the invoice runs out first, and after 24 hours at most.
+A `timeout` event's `data` carries the payment's `stage` and `statusDetail` ([payment stages](#payment-stages)); the stream doesn't send an event for each stage change. A payment that can't be sent fails quickly, and its funds are released at once: within about half a minute if the Lightning service refuses it, or after 10 minutes of automatic retries for a temporary problem (`stage: "retrying"`, until `retryUntil`). If its invoice runs out first, it fails with `failureReason` set to `Invoice expired before it could be paid.` A payment stays `processing` longer only when its funds are already on the Lightning network: it settles or fails as soon as the network does, usually within seconds, and is never refunded while it could still be paid. Show `failureReason` as is; when it ends in "Please try again.", sending the payment again later can work.
 
 ### Stream all wallet events
 
