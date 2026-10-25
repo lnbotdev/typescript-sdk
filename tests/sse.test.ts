@@ -319,6 +319,38 @@ describe("snake_case event payloads", () => {
     expect(events[0].data).toMatchObject({ status: "pending", maxFee: 20 });
   });
 
+  it("payments.watch decodes stage, status_detail and retry_until in a timeout event", async () => {
+    const inFlight = '{"number":4,"status":"processing","amount":1000,"max_fee":20,"service_fee":3,"actual_fee":null,"address":"lnbc10u1p...","reference":null,"preimage":null,"tx_number":null,"failure_reason":null,"created_at":"2026-10-25T14:33:53+00:00","settled_at":null,"stage":"in_flight","status_detail":"Sent; the Lightning network is completing it, usually within seconds.","retry_until":null}';
+    const mock = sseFetch([`event: timeout\ndata: ${inFlight}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(4)) events.push(event);
+
+    expect(events).toHaveLength(1);
+    expect(events[0].event).toBe("timeout");
+    expect(events[0].data).toMatchObject({
+      number: 4, status: "processing", maxFee: 20, serviceFee: 3, stage: "in_flight",
+      statusDetail: "Sent; the Lightning network is completing it, usually within seconds.",
+    });
+    expect(events[0].data).toHaveProperty("retryUntil", null);
+    expect(events[0].data).not.toHaveProperty("status_detail");
+    expect(events[0].data).not.toHaveProperty("retry_until");
+  });
+
+  it("payments.watch decodes a retry_until timestamp", async () => {
+    const retrying = '{"number":4,"status":"pending","amount":1000,"max_fee":20,"service_fee":3,"actual_fee":null,"address":"lnbc10u1p...","stage":"retrying","status_detail":"Not sent yet; retrying for a few minutes. If it still can\'t be sent, it fails and the funds are released.","retry_until":"2026-10-25T14:43:53.1234567+00:00"}';
+    const mock = sseFetch([`event: timeout\ndata: ${retrying}\n\n`]);
+    const client = new LnBot({ apiKey: "key_test", fetch: mock.fetch });
+
+    const events = [];
+    for await (const event of client.wallet("wal_1").payments.watch(4)) events.push(event);
+
+    expect(events[0].data.stage).toBe("retrying");
+    expect(events[0].data.retryUntil).toBe("2026-10-25T14:43:53.1234567+00:00");
+    expect(events[0].data.statusDetail).toMatch(/^Not sent yet/);
+  });
+
   it("invoices.watch decodes tx number and timestamps", async () => {
     const invoice = '{"number":7,"status":"settled","amount":1000,"bolt11":"lnbc10u1p","reference":null,"memo":null,"preimage":"cd34","tx_number":4,"created_at":"2026-10-24T14:00:00Z","settled_at":"2026-10-24T14:01:00Z","expires_at":"2026-10-24T15:00:00Z"}';
     const mock = sseFetch([`event: settled\ndata: ${invoice}\n\n`]);

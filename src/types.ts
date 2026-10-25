@@ -6,6 +6,33 @@ export type InvoiceStatus = "pending" | "settled" | "expired";
 
 export type PaymentStatus = "pending" | "processing" | "settled" | "failed";
 
+/**
+ * Where a payment is, more precisely than its `status`:
+ *
+ * | `stage` | With `status` |
+ * | --- | --- |
+ * | `queued` | `pending` |
+ * | `retrying` | `pending` (see `retryUntil`) |
+ * | `sending` | `pending` or `processing` |
+ * | `in_flight` | `processing` |
+ * | `confirming` | `processing` |
+ * | `on_hold` | `processing` |
+ * | `settled` | `settled` |
+ * | `failed` | `failed` |
+ *
+ * Open: more stages may be added, so for one you don't know, go by `status`.
+ */
+export type PaymentStage =
+  | "queued"
+  | "retrying"
+  | "sending"
+  | "in_flight"
+  | "confirming"
+  | "on_hold"
+  | "settled"
+  | "failed"
+  | (string & {});
+
 export type TransactionType = "credit" | "debit";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +48,221 @@ export interface RegisterResponse {
 
 export interface MeResponse {
   walletId: string;
+}
+
+// ---------------------------------------------------------------------------
+// Service status
+// ---------------------------------------------------------------------------
+
+/**
+ * The state of ln.bot or one of its parts. `unknown`: not measured for 5
+ * minutes. Open: more values may be added, so never fail on one you don't know.
+ */
+export type ServiceState = "operational" | "degraded" | "outage" | "unknown" | (string & {});
+
+/**
+ * An operators' notice level: `info` (no effect on the status), `warning`
+ * (the overall status is at least `degraded`) or `outage` (the overall status
+ * is `outage`). Open: more values may be added.
+ */
+export type StatusNoticeLevel = "info" | "warning" | "outage" | (string & {});
+
+/**
+ * The range of `statusHistory()`: `24h` (5-minute buckets), `7d` (hourly),
+ * `30d` (6-hourly) or `90d` (daily). Any other value is sent as is; the API
+ * answers 400 to one it doesn't know.
+ */
+export type StatusRange = "24h" | "7d" | "30d" | "90d" | (string & {});
+
+/** A message from the operators. */
+export interface StatusNotice {
+  level: StatusNoticeLevel;
+  /** Up to 500 characters, to show as is */
+  message: string;
+  /** When it was posted */
+  since: string;
+  /** When it came down; null while it is still up (always null in `status()`) */
+  until: string | null;
+}
+
+/** Lightning payments out. */
+export interface SendingStatus {
+  status: ServiceState;
+  /** Payments being sent now */
+  inProgress: number;
+  /**
+   * Those payments by stage (`queued`, `retrying`, `sending`, `in_flight`,
+   * `confirming`, `on_hold`, and any added later). Stages with none are left
+   * out, so it can be `{}`.
+   */
+  byStage: Record<string, number>;
+  /** How long the oldest of them has waited, in seconds; null when none */
+  longestWaitSeconds: number | null;
+  /** Sent in the last hour */
+  sentLastHour: number;
+  /** Failed in the last hour, for any reason */
+  failedLastHour: number;
+  /** Of those, the ones the service caused; the rest were the invoice's or the route's */
+  serviceFailuresLastHour: number;
+  /** Request-to-settlement time over the last hour, median, in seconds; null when nothing was sent */
+  medianSeconds: number | null;
+  /** The same, 95th percentile; null when nothing was sent */
+  p95Seconds: number | null;
+}
+
+/** Lightning payments in. */
+export interface ReceivingStatus {
+  status: ServiceState;
+  /** Incoming payments credited in the last hour */
+  creditedLastHour: number;
+  /** Incoming payments waiting to be credited now; null when it could not be read */
+  creditBacklog: number | null;
+}
+
+/** The Lightning node. */
+export interface NodeStatus {
+  status: ServiceState;
+  /** How long the node took to answer, in milliseconds; null when it didn't answer */
+  latencyMs: number | null;
+}
+
+/** Webhook delivery. */
+export interface WebhooksStatus {
+  status: ServiceState;
+  /** Deliveries waiting to go out; null when it could not be read */
+  backlog: number | null;
+}
+
+export interface StatusComponents {
+  sending: SendingStatus;
+  receiving: ReceivingStatus;
+  node: NodeStatus;
+  webhooks: WebhooksStatus;
+}
+
+/** The service right now, from `status()`. */
+export interface ServiceStatus {
+  /** Overall. With `unknown`, the numbers below are as old as `updatedAt`. */
+  status: ServiceState;
+  /** When it was measured; null if never */
+  updatedAt: string | null;
+  /** A message from the operators, or null */
+  notice: StatusNotice | null;
+  components: StatusComponents;
+}
+
+/** Percent of the measured time in each state; each is null when nothing was measured. */
+export interface UptimeShare {
+  operational: number | null;
+  degraded: number | null;
+  outage: number | null;
+}
+
+export interface StatusUptime {
+  overall: UptimeShare;
+  sending: UptimeShare;
+  receiving: UptimeShare;
+  node: UptimeShare;
+  webhooks: UptimeShare;
+}
+
+/** One bar of the settlement-time histogram. */
+export interface SettleTimeCount {
+  /** Upper bound in seconds (1, 2, 3, 5, 10, 20, 30, 60, 120, 300, 600); null for the last entry, anything slower */
+  upToSeconds: number | null;
+  /** Payments that settled within it */
+  count: number;
+}
+
+/** The whole range of `statusHistory()`. */
+export interface StatusHistorySummary {
+  /** Measurements in the range, about one a minute */
+  samples: number;
+  uptime: StatusUptime;
+  sent: number;
+  failed: number;
+  /** Of the failures, the ones the service caused */
+  serviceFailures: number;
+  credited: number;
+  /** Request-to-settlement time, median, in seconds (approximate, from `settleTimes`) */
+  medianSeconds: number | null;
+  /** The same, 95th percentile */
+  p95Seconds: number | null;
+  settleTimes: SettleTimeCount[];
+  /** The node's average response time, in milliseconds */
+  avgLatencyMs: number | null;
+  /** The node's slowest response, in milliseconds */
+  maxLatencyMs: number | null;
+}
+
+/** How many of a bucket's measurements found a part in each state; the rest found it operational. */
+export interface StatusBucketCounts {
+  degraded: number;
+  outage: number;
+}
+
+export interface StatusBucketSending extends StatusBucketCounts {
+  sent: number;
+  failed: number;
+  serviceFailures: number;
+  medianSeconds: number | null;
+  p95Seconds: number | null;
+  /** Most payments in progress at once */
+  maxInProgress: number | null;
+  /** Longest wait of a payment in progress, in seconds */
+  maxWaitSeconds: number | null;
+}
+
+export interface StatusBucketReceiving extends StatusBucketCounts {
+  credited: number;
+  /** Most incoming payments waiting to be credited at once */
+  maxBacklog: number | null;
+}
+
+export interface StatusBucketNode extends StatusBucketCounts {
+  avgLatencyMs: number | null;
+  maxLatencyMs: number | null;
+}
+
+export interface StatusBucketWebhooks extends StatusBucketCounts {
+  /** Most deliveries waiting at once */
+  maxBacklog: number | null;
+}
+
+/**
+ * One bucket of `statusHistory()`. `samples` is how many measurements it
+ * holds, about one a minute; `0` means it wasn't measured (its percentiles and
+ * gauges are then null): treat it as no data, not as up or down. Its uptime
+ * is `(samples - degraded - outage) / samples`.
+ */
+export interface StatusBucket {
+  /** Start of the bucket, aligned to UTC */
+  at: string;
+  samples: number;
+  overall: StatusBucketCounts;
+  sending: StatusBucketSending;
+  receiving: StatusBucketReceiving;
+  node: StatusBucketNode;
+  webhooks: StatusBucketWebhooks;
+}
+
+/** The service over time, from `statusHistory()`. */
+export interface ServiceStatusHistory {
+  range: StatusRange;
+  /** Bucket length in seconds: 300 (24h), 3600 (7d), 21600 (30d) or 86400 (90d) */
+  bucketSeconds: number;
+  /** Start of the first bucket */
+  from: string;
+  /** End of the range: now */
+  to: string;
+  summary: StatusHistorySummary;
+  /**
+   * Oldest first. Don't assume a count: the last bucket is still filling, so a
+   * full range has one more than it spans (289 for 24h).
+   */
+  buckets: StatusBucket[];
+  /** The operators' notices that were up during the range, oldest first */
+  notices: StatusNotice[];
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +392,7 @@ export interface CreatePaymentRequest {
   /** Idempotency key to safely retry without duplicate payments */
   idempotencyKey?: string | null;
   /**
-   * Maximum network fee in sats: Spark's 0.25% plus Lightning routing.
+   * Maximum network fee in sats: 0.25% plus Lightning routing.
    * Defaults to 1% of the amount, minimum 20 sats; accepts 1 to the larger of
    * 10,000 and 5% of the amount. Leave it out unless you need a different cap.
    */
@@ -167,7 +409,7 @@ export interface PaymentResponse {
   maxFee: number;
   /** Service fee: 0.25%, minimum 1 sat; 0 for transfers between ln.bot wallets */
   serviceFee: number;
-  /** Network fee actually charged (Spark's fee plus routing), or null until settled */
+  /** Network fee actually charged (0.25% plus routing), or null until settled */
   actualFee: number | null;
   address: string;
   reference: string | null;
@@ -176,6 +418,23 @@ export interface PaymentResponse {
   failureReason: string | null;
   createdAt: string | null;
   settledAt: string | null;
+  /**
+   * Where the payment is, more precisely than `status` (see {@link PaymentStage}).
+   * For a stage you don't know, go by `status`. Missing from an older API.
+   */
+  stage?: PaymentStage;
+  /**
+   * A sentence to show the user as is: what is happening while the payment is
+   * in progress, the `failureReason` once it failed, null once it settled.
+   * Missing from an older API.
+   */
+  statusDetail?: string | null;
+  /**
+   * Only with `stage: "retrying"`: until when it is retried. If it still can't
+   * be sent by then, it fails within about a minute and the funds are
+   * released. Null otherwise; missing from an older API.
+   */
+  retryUntil?: string | null;
 }
 
 export interface ListPaymentsParams {
@@ -206,7 +465,7 @@ export interface ResolveTargetResponse {
   amount: number | null;
   /** True when the recipient is an ln.bot wallet: an internal transfer with no fees */
   internal: boolean;
-  /** Estimated network fee in sats (Spark's 0.25% plus routing). Null without an amount or an estimate; 0 if internal. */
+  /** Estimated network fee in sats (0.25% plus routing). Null without an amount or an estimate; 0 if internal. */
   networkFeeEstimate: number | null;
   /** Service fee in sats: 0.25%, minimum 1 sat; 0 if internal. Null without an amount. */
   serviceFee: number | null;
@@ -455,7 +714,7 @@ export interface VerifyL402Response {
 export interface PayL402Request {
   /** WWW-Authenticate header value from an HTTP 402 response */
   wwwAuthenticate: string;
-  /** Maximum network fee in sats (Spark's fee plus routing). Defaults to 1% of the amount, minimum 20 sats. */
+  /** Maximum network fee in sats (0.25% plus routing). Defaults to 1% of the amount, minimum 20 sats. */
   maxFee?: number | null;
   /** Reference string stored with the payment */
   reference?: string | null;
@@ -474,7 +733,7 @@ export interface L402PayResponse {
   preimage: string | null;
   /** Payment amount in sats */
   amount: number;
-  /** Network fee charged in sats (Spark's fee plus routing), or null if not yet settled */
+  /** Network fee charged in sats (0.25% plus routing), or null if not yet settled */
   fee: number | null;
   /** Payment number for status polling */
   paymentNumber: number;
@@ -497,7 +756,9 @@ export interface InvoiceEvent {
 
 /**
  * An event from `payments.watch()`. `timeout` means the wait ran out before the
- * payment settled or failed: `data` is its current state; read or watch again.
+ * payment settled or failed: `data` is its current state, with `stage`,
+ * `statusDetail` and `retryUntil`; read or watch again. The stream doesn't
+ * send an event for each stage change.
  */
 export interface PaymentEvent {
   event: "settled" | "failed" | "timeout";

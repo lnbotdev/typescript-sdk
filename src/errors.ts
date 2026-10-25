@@ -52,3 +52,15 @@ export class ConflictError extends LnBotError {
     this.name = "ConflictError";
   }
 }
+
+/**
+ * 429: too many requests. The API's public routes (`register()`, `restore`,
+ * the public invoices, `status()` and `statusHistory()`) share a limit of 10
+ * requests a minute per IP.
+ */
+export class TooManyRequestsError extends LnBotError {
+  constructor(body: string) {
+    super(extractMessage(body, "Too Many Requests"), 429, body);
+    this.name = "TooManyRequestsError";
+  }
+}

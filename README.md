@@ -130,7 +130,7 @@ console.log(`${info.available} sats available`);
 
 ## Fees
 
-Payments between ln.bot wallets are free. A payment out to Lightning pays a service fee (0.25%, minimum 1 sat) and the network fee (Spark's 0.25% plus Lightning routing). Leave `maxFee` out: the server caps the network fee at 1% of the amount (minimum 20 sats) and holds only the estimate plus a small buffer while the payment is in flight. On success the wallet is debited `amount + actualFee + serviceFee`.
+Payments between ln.bot wallets are free. A payment out to Lightning pays a service fee (0.25%, minimum 1 sat) and the network fee (0.25% plus Lightning routing). Leave `maxFee` out: the server caps the network fee at 1% of the amount (minimum 20 sats) and holds only the estimate plus a small buffer while the payment is in flight. On success the wallet is debited `amount + actualFee + serviceFee`.
 
 ### Price a payment before sending
 
@@ -161,6 +161,38 @@ if (maxSendable) {
   await w.payments.create({ target: "alice@example.com", amount: maxSendable });
 }
 ```
+
+---
+
+## Payment stages
+
+Every payment returned by `create`, `get` and `list` carries `stage`, `statusDetail` and `retryUntil`. `stage` says where the payment is, more precisely than `status`; `statusDetail` is a sentence to show your user as is.
+
+```typescript
+const p = await w.payments.get(paymentNumber);
+
+console.log(p.status);       // "pending"
+console.log(p.stage);        // "retrying"
+console.log(p.statusDetail); // "Not sent yet; retrying for a few minutes. ..."
+console.log(p.retryUntil);   // "2026-10-25T14:43:53+00:00"
+```
+
+| `stage` | With `status` | `statusDetail` |
+| --- | --- | --- |
+| `queued` | `pending` | Waiting to be sent. |
+| `retrying` | `pending` | Not sent yet; retrying for a few minutes. If it still can't be sent, it fails and the funds are released. |
+| `sending` | `pending` or `processing` | Being sent. Between ln.bot wallets: Being transferred to the recipient's wallet. |
+| `in_flight` | `processing` | Sent; the Lightning network is completing it, usually within seconds. |
+| `confirming` | `processing` | Checking with the Lightning network whether it went out. The funds stay on hold until then. |
+| `on_hold` | `processing` | Interrupted by an earlier version of the service and on hold until it is reviewed. The funds are held, not lost. |
+| `settled` | `settled` | `null` |
+| `failed` | `failed` | The `failureReason` |
+
+- **Fall back to `status`.** More stages may be added, and `PaymentStage` accepts any string, so for a stage you don't know, go by `status`.
+- **`retryUntil`** is set only with `stage: "retrying"`: if the payment still can't be sent by then, it fails within about a minute and the funds are released.
+- **Both are in progress.** A payment can go from `processing` back to `pending` when it is retried, so treat both as in progress.
+- **Older API.** The three fields are optional: an API without them leaves them `undefined`.
+- **Where they appear.** `w.payments.watch()` carries them too. Webhooks and `w.events.stream()` don't.
 
 ---
 
@@ -268,6 +300,33 @@ const inv2 = await client.invoices.createForAddress({
 });
 ```
 
+## Service status
+
+Whether ln.bot is working, measured about once a minute. Both calls are public: no API key is needed, and sending one does no harm.
+
+```typescript
+const client = new LnBot(); // no API key needed
+
+const now = await client.status();
+console.log(now.status);                            // "operational" | "degraded" | "outage" | "unknown"
+console.log(now.notice?.message);                   // a message from the operators, if any
+console.log(now.components.sending.byStage);        // { in_flight: 1 }: payments being sent, by stage
+console.log(now.components.node.latencyMs);         // null when the node didn't answer
+
+const history = await client.statusHistory("7d");   // "24h" (default), "7d", "30d" or "90d"
+for (const bucket of history.buckets) {
+  if (bucket.samples === 0) continue;               // not measured: no data, not up or down
+  const up = (bucket.samples - bucket.overall.degraded - bucket.overall.outage) / bucket.samples;
+  console.log(bucket.at, up);
+}
+console.log(history.summary.uptime.overall.operational); // percent of measured time
+```
+
+- `status()` covers the overall status and four parts: `sending` (payments out), `receiving` (payments in), `node` (the Lightning node) and `webhooks` (deliveries). `unknown` means nothing was measured for 5 minutes, and the numbers are as old as `updatedAt`.
+- `statusHistory()` returns buckets of 5 minutes (`24h`), an hour (`7d`), 6 hours (`30d`) or a day (`90d`), aligned to UTC and oldest first. The last one is still filling, so don't assume a count.
+- Every percentile, gauge and latency can be `null`. `status`, `level`, `stage` and `range` values are open strings: more may be added, so never fail on one you don't know.
+- Both calls share the API's limit for public routes, 10 requests a minute per IP. Over it they throw `TooManyRequestsError` (status 429).
+
 ## User keys
 
 ```typescript
@@ -351,7 +410,7 @@ for await (const event of w.payments.watch(paymentNumber, 60)) {
 }
 ```
 
-A payment that can't be routed yet stays `pending` and is retried automatically. It fails with `failureReason` set to `Invoice expired before it could be paid.` if the invoice runs out first, and after 24 hours at most.
+A `timeout` event's `data` carries the payment's `stage` and `statusDetail` ([payment stages](#payment-stages)); the stream doesn't send an event for each stage change. A payment that can't be routed yet stays `pending` and is retried automatically. It fails with `failureReason` set to `Invoice expired before it could be paid.` if the invoice runs out first, and after 24 hours at most.
 
 ### Stream all wallet events
 
@@ -393,6 +452,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  TooManyRequestsError,
 } from "@lnbot/sdk";
 
 try {
@@ -408,6 +468,8 @@ try {
     // 404 — resource not found
   } else if (err instanceof ConflictError) {
     // 409 — duplicate or conflict
+  } else if (err instanceof TooManyRequestsError) {
+    // 429: public routes allow 10 requests a minute per IP
   } else if (err instanceof LnBotError) {
     // Other API error
     console.error(err.status, err.body);
@@ -437,6 +499,8 @@ const client = new LnBot({
 | --- | --- |
 | `client.register()` | Create a new account (no auth) |
 | `client.me()` | Get current identity |
+| `client.status()` | Service status right now (no auth) |
+| `client.statusHistory(range?)` | Service status over `24h` (default), `7d`, `30d` or `90d` (no auth) |
 | `client.wallet(id)` | Get a wallet handle for scoped operations |
 | `client.wallets.create()` | Create a new wallet (user key) |
 | `client.wallets.list()` | List all wallets (user key) |

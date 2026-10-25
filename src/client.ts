@@ -4,6 +4,7 @@ import {
   ForbiddenError,
   LnBotError,
   NotFoundError,
+  TooManyRequestsError,
   UnauthorizedError,
 } from "./errors.js";
 import type {
@@ -47,6 +48,9 @@ import type {
   RestorePasskeyCompleteRequest,
   RestorePasskeyCompleteResponse,
   RotateApiKeyResponse,
+  ServiceStatus,
+  ServiceStatusHistory,
+  StatusRange,
   TransactionResponse,
   TransferAddressRequest,
   TransferAddressResponse,
@@ -600,6 +604,34 @@ export class LnBot {
     return this._http.get("/v1/me");
   }
 
+  /**
+   * Returns the service status right now: overall, per part (sending,
+   * receiving, node, webhooks) and any notice from the operators. Measured
+   * about once a minute. No authentication required.
+   *
+   * Shares the public routes' limit of 10 requests a minute per IP; over it,
+   * throws `TooManyRequestsError`.
+   */
+  status(): Promise<ServiceStatus> {
+    return this._http.get("/v1/status");
+  }
+
+  /**
+   * Returns the service status over time, in buckets aligned to UTC, with a
+   * summary of the whole range and the operators' notices. No authentication
+   * required.
+   *
+   * Shares the public routes' limit of 10 requests a minute per IP; over it,
+   * throws `TooManyRequestsError`.
+   *
+   * @param range `24h` (default, 5-minute buckets), `7d` (hourly), `30d`
+   *   (6-hourly) or `90d` (daily). Any other value is sent as is, and the API
+   *   answers it with a `BadRequestError`.
+   */
+  statusHistory(range: StatusRange = "24h"): Promise<ServiceStatusHistory> {
+    return this._http.get(`/v1/status/history${qs({ range })}`);
+  }
+
   /** Returns a wallet handle for the given wallet ID (or "current" for wallet-key auth). */
   wallet(walletId: string): Wallet {
     return new Wallet(this._http, walletId);
@@ -636,6 +668,8 @@ export class LnBot {
           throw new NotFoundError(text);
         case 409:
           throw new ConflictError(text);
+        case 429:
+          throw new TooManyRequestsError(text);
         default:
           throw new LnBotError(res.statusText, res.status, text);
       }

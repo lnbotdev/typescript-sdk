@@ -119,6 +119,29 @@ if (!USER_KEY || !WALLET_ID) {
     });
 
     // =======================================================================
+    // SERVICE STATUS (public, no key)
+    // =======================================================================
+
+    describe("service status", () => {
+      const noAuth = new LnBot();
+
+      it("status() returns the overall and per-part status", async () => {
+        const s = await noAuth.status();
+        expect(typeof s.status).toBe("string");
+        expect(s.components.sending.byStage).toBeTypeOf("object");
+        expect(typeof s.components.node.status).toBe("string");
+      });
+
+      it("statusHistory() returns 24h of 5-minute buckets", async () => {
+        const h = await noAuth.statusHistory();
+        expect(h.range).toBe("24h");
+        expect(h.bucketSeconds).toBe(300);
+        expect(h.buckets.length).toBeGreaterThan(0);
+        expect(h.summary.settleTimes.length).toBeGreaterThan(0);
+      });
+    });
+
+    // =======================================================================
     // WALLETS
     // =======================================================================
 

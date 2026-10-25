@@ -1340,6 +1340,45 @@
         }
       }
     },
+    "/v1/status": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Service status",
+        "description": "Public status of the service, refreshed every minute: overall and per part (sending, receiving, the node, webhooks), payments in progress by stage and the longest wait, payments sent and failed over the last hour and how long they took, incoming payments credited and waiting, and any notice from the operators. Status is operational, degraded or outage; unknown when it could not be measured for a few minutes. No login needed; cached for 15 seconds.",
+        "operationId": "GetStatus",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/status/history": {
+      "get": {
+        "tags": [
+          "Status"
+        ],
+        "summary": "Service status over time",
+        "description": "The service over the last 24 hours (5-minute buckets), 7 days (hourly), 30 days (6-hourly) or 90 days (daily), for charts. Per bucket: how often each part was degraded or in an outage, payments sent and failed, settlement times, payments in progress and the longest wait, incoming payments credited, the node's response time, and the webhook backlog. For the whole range: uptime in percent, totals, settlement times and their distribution. Also the operators' notices. Query: range=24h (default), 7d, 30d or 90d. No login needed; cached for a minute.",
+        "operationId": "GetStatusHistory",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/v1/backup/passkey/begin": {
       "post": {
         "tags": [
@@ -1790,27 +1829,6 @@
           }
         }
       },
-      "AuthenticationExtensionsLargeBlobOutputs": {
-        "type": [
-          "null",
-          "object"
-        ],
-        "properties": {
-          "supported": {
-            "type": "boolean"
-          },
-          "blob": {
-            "type": [
-              "null",
-              "string"
-            ],
-            "format": "byte"
-          },
-          "written": {
-            "type": "boolean"
-          }
-        }
-      },
       "AuthenticationExtensionsPRFInputs": {
         "type": [
           "null",
@@ -1822,20 +1840,6 @@
           },
           "evalByCredential": {
             "$ref": "#/components/schemas/NullableOfKeyValuePairOfstringAndAuthenticationExtensionsPRFValues"
-          }
-        }
-      },
-      "AuthenticationExtensionsPRFOutputs": {
-        "type": [
-          "null",
-          "object"
-        ],
-        "properties": {
-          "enabled": {
-            "type": "boolean"
-          },
-          "results": {
-            "$ref": "#/components/schemas/AuthenticationExtensionsPRFValues"
           }
         }
       },
@@ -2353,23 +2357,6 @@
         },
         "description": "WebAuthn credential creation options to pass to navigator.credentials.create()."
       },
-      "CredentialPropertiesOutput": {
-        "type": [
-          "null",
-          "object"
-        ],
-        "properties": {
-          "rk": {
-            "type": "boolean"
-          },
-          "authenticatorDisplayName": {
-            "type": [
-              "null",
-              "string"
-            ]
-          }
-        }
-      },
       "ErrorResponse": {
         "required": [
           "error"
@@ -2562,7 +2549,10 @@
           "txNumber",
           "failureReason",
           "createdAt",
-          "settledAt"
+          "settledAt",
+          "stage",
+          "statusDetail",
+          "retryUntil"
         ],
         "type": "object",
         "properties": {
@@ -2645,8 +2635,39 @@
             ],
             "description": "When the payment settled. Null if not yet settled.",
             "format": "date-time"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/PaymentStage"
+          },
+          "statusDetail": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "What is happening with the payment, in words to show the user. The failure reason once failed; null once settled."
+          },
+          "retryUntil": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "While retrying: until when it is retried. If it still can't be sent by then, it fails and the funds are released. Null otherwise.",
+            "format": "date-time"
           }
         }
+      },
+      "PaymentStage": {
+        "enum": [
+          "queued",
+          "sending",
+          "retrying",
+          "in_flight",
+          "confirming",
+          "on_hold",
+          "settled",
+          "failed"
+        ],
+        "description": "Where the payment is, finer than status: queued, sending, retrying (not sent yet; retried for a few minutes, then failed with the funds released), in_flight (sent; the Lightning network is completing it), confirming (checking with the network whether it went out), on_hold (interrupted by an older version; under review), settled or failed."
       },
       "PaymentStatus": {
         "enum": [
@@ -3432,6 +3453,9 @@
     },
     {
       "name": "Account"
+    },
+    {
+      "name": "Status"
     },
     {
       "name": "Backup"

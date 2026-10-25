@@ -244,6 +244,53 @@ describe("payments", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Payment stages
+// ---------------------------------------------------------------------------
+
+describe("payment stages", () => {
+  const retrying = '{"number":4,"status":"pending","amount":1000,"maxFee":20,"serviceFee":3,"actualFee":null,"address":"lnbc10u1p...","reference":null,"preimage":null,"txNumber":null,"failureReason":null,"createdAt":"2026-10-25T14:33:53+00:00","settledAt":null,"stage":"retrying","statusDetail":"Not sent yet; retrying for a few minutes. If it still can\'t be sent, it fails and the funds are released.","retryUntil":"2026-10-25T14:43:53+00:00"}';
+  const olderApi = '{"number":3,"status":"settled","amount":500,"maxFee":20,"serviceFee":1,"actualFee":2,"address":"x4k7m2@ln.bot","reference":null,"preimage":"9f2c...","txNumber":12,"failureReason":null,"createdAt":"2026-10-25T14:30:00+00:00","settledAt":"2026-10-25T14:30:01+00:00"}';
+  const unknownStage = '{"number":5,"status":"processing","amount":1000,"maxFee":20,"serviceFee":3,"actualFee":null,"address":"x4k7m2@ln.bot","reference":null,"preimage":null,"txNumber":null,"failureReason":null,"createdAt":"2026-10-25T14:35:00+00:00","settledAt":null,"stage":"teleporting","statusDetail":"Moving through a new kind of route.","retryUntil":null}';
+
+  it("get returns stage, statusDetail and retryUntil", async () => {
+    const { client } = createClient(JSON.parse(retrying));
+    const p = await client.wallet("wal_1").payments.get(4);
+    expect(p.status).toBe("pending");
+    expect(p.stage).toBe("retrying");
+    expect(p.statusDetail).toBe("Not sent yet; retrying for a few minutes. If it still can't be sent, it fails and the funds are released.");
+    expect(p.retryUntil).toBe("2026-10-25T14:43:53+00:00");
+  });
+
+  it("create and list carry the stage fields", async () => {
+    const created = createClient(JSON.parse(retrying));
+    expect((await created.client.wallet("wal_1").payments.create({ target: "lnbc10u1p..." })).stage).toBe("retrying");
+
+    const listed = createClient([JSON.parse(retrying), JSON.parse(unknownStage)]);
+    const list = await listed.client.wallet("wal_1").payments.list();
+    expect(list.map((p) => p.stage)).toEqual(["retrying", "teleporting"]);
+  });
+
+  it("parses a payment from an API without the new fields", async () => {
+    const { client } = createClient(JSON.parse(olderApi));
+    const p = await client.wallet("wal_1").payments.get(3);
+    expect(p.status).toBe("settled");
+    expect(p.txNumber).toBe(12);
+    expect(p.stage).toBeUndefined();
+    expect(p.statusDetail).toBeUndefined();
+    expect(p.retryUntil).toBeUndefined();
+  });
+
+  it("passes a stage it doesn't know through, with status to fall back on", async () => {
+    const { client } = createClient(JSON.parse(unknownStage));
+    const p = await client.wallet("wal_1").payments.get(5);
+    expect(p.stage).toBe("teleporting");
+    expect(p.status).toBe("processing");
+    expect(p.statusDetail).toBe("Moving through a new kind of route.");
+    expect(p.retryUntil).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Addresses
 // ---------------------------------------------------------------------------
 

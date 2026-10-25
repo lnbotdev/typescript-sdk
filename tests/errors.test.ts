@@ -6,6 +6,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  TooManyRequestsError,
 } from "../src/index.js";
 
 describe("LnBotError", () => {
@@ -78,5 +79,20 @@ describe("ConflictError", () => {
     expect(err.status).toBe(409);
     expect(err.message).toBe("Conflict");
     expect(err.name).toBe("ConflictError");
+  });
+});
+
+describe("TooManyRequestsError", () => {
+  it("has correct status and fallback", () => {
+    const err = new TooManyRequestsError("{}");
+    expect(err.status).toBe(429);
+    expect(err.message).toBe("Too Many Requests");
+    expect(err.name).toBe("TooManyRequestsError");
+    expect(err).toBeInstanceOf(LnBotError);
+  });
+
+  it("extracts the API's error field", () => {
+    const err = new TooManyRequestsError(JSON.stringify({ error: "Too many requests. Please try again later." }));
+    expect(err.message).toBe("Too many requests. Please try again later.");
   });
 });

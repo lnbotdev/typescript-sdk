@@ -7,6 +7,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ConflictError,
+  TooManyRequestsError,
 } from "../src/index.js";
 import { mockFetch, mockTextFetch, createClient } from "./helpers.js";
 
@@ -150,6 +151,11 @@ describe("error mapping", () => {
     await expect(client.wallet("wal_1").get()).rejects.toThrow(ConflictError);
   });
 
+  it("throws TooManyRequestsError for 429", async () => {
+    const { client } = createClient({ error: "Too many requests. Please try again later." }, 429);
+    await expect(client.invoices.createForWallet({ walletId: "wal_1", amount: 1 })).rejects.toThrow(TooManyRequestsError);
+  });
+
   it("throws LnBotError for other status codes", async () => {
     const { client } = createClient({ message: "server error" }, 500);
     await expect(client.wallet("wal_1").get()).rejects.toThrow(LnBotError);
@@ -205,5 +211,19 @@ describe("top-level methods", () => {
     await client.me();
     expect(captured().method).toBe("GET");
     expect(captured().url).toContain("/v1/me");
+  });
+
+  it("status() gets /v1/status", async () => {
+    const { client, captured } = createClient({ status: "operational" });
+    await client.status();
+    expect(captured().method).toBe("GET");
+    expect(captured().url).toContain("/v1/status");
+  });
+
+  it("statusHistory() gets /v1/status/history", async () => {
+    const { client, captured } = createClient({ range: "7d" });
+    await client.statusHistory("7d");
+    expect(captured().method).toBe("GET");
+    expect(captured().url).toContain("/v1/status/history?range=7d");
   });
 });
