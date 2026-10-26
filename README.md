@@ -130,7 +130,7 @@ console.log(`${info.available} sats available`);
 
 ## Fees
 
-Payments between ln.bot wallets are free. A payment out to Lightning pays a service fee (0.25%, minimum 1 sat) and the network fee (0.25% plus Lightning routing). Leave `maxFee` out: the server caps the network fee at 1% of the amount (minimum 20 sats) and holds only the estimate plus a small buffer while the payment is in flight. On success the wallet is debited `amount + actualFee + serviceFee`.
+Payments between ln.bot wallets are free. A payment out to Lightning pays a service fee of 0.25% (minimum 1 sat) and the network fee, which is the Lightning routing fee. Leave `maxFee` out: the server caps the network fee at 1% of the amount (minimum 20 sats) and holds only the estimate plus a small buffer while the payment is in flight. On success the wallet is debited `amount + actualFee + serviceFee`.
 
 ### Price a payment before sending
 
@@ -138,9 +138,9 @@ Payments between ln.bot wallets are free. A payment out to Lightning pays a serv
 const quote = await w.payments.resolve({ target: "alice@example.com", amount: 250000 });
 
 console.log(quote.internal);           // true for an ln.bot wallet: no fees
-console.log(quote.networkFeeEstimate); // 700
+console.log(quote.networkFeeEstimate); // 75
 console.log(quote.serviceFee);         // 625
-console.log(quote.total);              // 251325
+console.log(quote.total);              // 250700
 
 if (quote.feeWarning) {
   // Sending without maxFee would be rejected: the fee is unusually high

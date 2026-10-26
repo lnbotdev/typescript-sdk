@@ -392,9 +392,10 @@ export interface CreatePaymentRequest {
   /** Idempotency key to safely retry without duplicate payments */
   idempotencyKey?: string | null;
   /**
-   * Maximum network fee in sats: 0.25% plus Lightning routing.
-   * Defaults to 1% of the amount, minimum 20 sats; accepts 1 to the larger of
-   * 10,000 and 5% of the amount. Leave it out unless you need a different cap.
+   * Maximum network fee in sats: the Lightning routing, on top of the 0.25%
+   * service fee. Defaults to 1% of the amount, minimum 20 sats; accepts 1 to
+   * the larger of 10,000 and 5% of the amount. Leave it out unless you need a
+   * different cap.
    */
   maxFee?: number | null;
   /** Caller-defined reference for tracking */
@@ -409,7 +410,7 @@ export interface PaymentResponse {
   maxFee: number;
   /** Service fee: 0.25%, minimum 1 sat; 0 for transfers between ln.bot wallets */
   serviceFee: number;
-  /** Network fee actually charged (0.25% plus routing), or null until settled */
+  /** Network fee actually charged in sats: the Lightning routing (the 0.25% service fee is separate), or null until settled */
   actualFee: number | null;
   address: string;
   reference: string | null;
@@ -465,7 +466,7 @@ export interface ResolveTargetResponse {
   amount: number | null;
   /** True when the recipient is an ln.bot wallet: an internal transfer with no fees */
   internal: boolean;
-  /** Estimated network fee in sats (0.25% plus routing). Null without an amount or an estimate; 0 if internal. */
+  /** Estimated network fee in sats: the Lightning routing. Null without an amount or an estimate; 0 if internal. */
   networkFeeEstimate: number | null;
   /** Service fee in sats: 0.25%, minimum 1 sat; 0 if internal. Null without an amount. */
   serviceFee: number | null;
@@ -714,7 +715,7 @@ export interface VerifyL402Response {
 export interface PayL402Request {
   /** WWW-Authenticate header value from an HTTP 402 response */
   wwwAuthenticate: string;
-  /** Maximum network fee in sats (0.25% plus routing). Defaults to 1% of the amount, minimum 20 sats. */
+  /** Maximum network fee in sats: the Lightning routing, on top of the 0.25% service fee. Defaults to 1% of the amount, minimum 20 sats. */
   maxFee?: number | null;
   /** Reference string stored with the payment */
   reference?: string | null;
@@ -733,7 +734,7 @@ export interface L402PayResponse {
   preimage: string | null;
   /** Payment amount in sats */
   amount: number;
-  /** Network fee charged in sats (0.25% plus routing), or null if not yet settled */
+  /** Network fee charged in sats: the Lightning routing (the 0.25% service fee is separate), or null if not yet settled */
   fee: number | null;
   /** Payment number for status polling */
   paymentNumber: number;
